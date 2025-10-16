@@ -16,14 +16,10 @@ const adminSchema = new mongoose.Schema({
         test: apiKeysSchema,
         live: apiKeysSchema,
     },
-    walletBalance: { type: Number, default: 0 },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
+    walletBalance: { type: Number, default: 0 }
 },
-{
-    timestamps: true,
-    collection: 'auth'
-}
+    { timestamps: true, collection: 'auth' }
+
 );
 
 const Admin = new mongoose.model('Admin', adminSchema);

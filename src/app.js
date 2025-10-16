@@ -9,6 +9,7 @@ import walletRouter from './routes/walletRoutes.js';
 import paymentRouter from './routes/paymentRoutes.js';
 import whatsappRouter from './routes/whatsappOtpRoutes.js';
 import telegramRouter from './routes/telegramOtpRoutes.js';
+import selectableRouter from './routes/selectableOtpRoutes.js';
 // import { testRouter } from './routes/testRoutes.js';
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/otp', whatsappRouter);
 app.use('/api/otp', telegramRouter);
 app.use('/api/wallet', walletRouter);
 app.use('/api/payment', paymentRouter);
+app.use('/api/otp/selectable', selectableRouter)
 // app.use('/api/otp', testRouter)
 
 export default app;

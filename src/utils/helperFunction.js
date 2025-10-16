@@ -7,7 +7,7 @@ const TOKEN = process.env.TG_GATEWAY_TOKEN;
 export default function verifySignature(req) {
     const ts = req.headers['x-request-timestamp'];
     const sig = req.headers['x-request-signature'];
-    if(!ts || !sig) return false;
+    if (!ts || !sig) return false;
 
     const rawBody = JSON.stringify(req.body);
     const dataCheck = `${ts}\n${rawBody}`;
@@ -19,6 +19,6 @@ export default function verifySignature(req) {
     // timingSafeCompare to avoid timing attacks
     const a = Buffer.from(hmac, 'hex');
     const b = Buffer.from(sig, 'hex');
-    if(a.length !== b.length) return false;
+    if (a.length !== b.length) return false;
     return crypto.timingSafeEqual(a, b)
 }
