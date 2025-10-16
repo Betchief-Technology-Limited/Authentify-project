@@ -1,19 +1,41 @@
 import Wallet from "../models/wallet.js";
 
-const SMS_API_COST = parseFloat(process.env.SMS_API_COST || '10');
+/**
+ * Auto-create wallet if missing 
+ */
+
+const ensureWallet = async (adminId) => {
+    let wallet = await Wallet.findOne({ admin: adminId });
+    if (!wallet) {
+        wallet = await Wallet.create({
+            admin: adminId,
+            balance: 0,
+            history: []
+        })
+    }
+
+    return wallet;
+}
 
 // check if wallet has enough balance before making the API call
-export const checkBalance = async (adminId, cost = SMS_API_COST) => {
-    const wallet = await Wallet.findOne({ admin: adminId });
-    if(!wallet) throw new Error('Wallet not found');
+export const checkBalance = async (adminId, cost) => {
+    const wallet = await ensureWallet(adminId);
+
+    if (typeof cost !=='number' || isNaN(cost)) {
+        throw new Error('Invalid cost parameter passed to checkBalance()');
+    }
     return wallet.balance >= cost
 }
 
 // Deduct from wallet and record history
-export const deduct = async (adminId, cost = SMS_API_COST, description = 'SMS OTP sent') => {
-    const wallet = await Wallet.findOne({ admin: adminId })
-    if(!wallet) throw new Error('Wallet not found');
-    if(wallet.balance < cost) throw new Error('Insufficient wallet balance');
+export const deduct = async (adminId, cost, description = 'Service charge') => {
+    const wallet = await ensureWallet(adminId)
+
+    if (typeof cost !=='number' || isNaN(cost)) {
+        throw new Error('Invalid cost parameter passed to deduct()');
+    }
+
+    if (wallet.balance < cost) throw new Error('Insufficient wallet balance');
 
     wallet.balance -= cost;
     wallet.history.push({ type: 'debit', amount: cost, description });
@@ -24,12 +46,11 @@ export const deduct = async (adminId, cost = SMS_API_COST, description = 'SMS OT
 
 // credit wallet (for top-ups)
 export const credit = async (adminId, amount, description = 'Wallet top-up') => {
-     const wallet = await Wallet.findOne({ admin: adminId });
-     if(!wallet) throw new Error('Wallet not found');
+    const wallet = await ensureWallet(adminId);
 
-     wallet.balance += amount;
-     wallet.history.push({ type: 'credit', amount, description });
-     await wallet.save();
+    wallet.balance += amount;
+    wallet.history.push({ type: 'credit', amount, description });
+    await wallet.save();
 
-     return wallet;
+    return wallet;
 }

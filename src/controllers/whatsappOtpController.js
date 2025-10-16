@@ -19,7 +19,7 @@ export const sendWhatsappOtp = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'OTP generated and sent via Whatsapp',
-            otpId: result.otpDoc.expiresAt,
+            otpId: result.otpDoc._id,
             providerResp: result.whatsappResp
         });
     } catch (err) {
@@ -31,7 +31,7 @@ export const sendWhatsappOtp = async (req, res) => {
 }
 
 // Verify OTP code
-export const verifyWhatsappOtp = async (res, req) => {
+export const verifyWhatsappOtp = async (req, res) => {
     try {
         const { otpId, code } = req.body;
 

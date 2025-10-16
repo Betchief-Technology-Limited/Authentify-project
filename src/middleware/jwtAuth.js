@@ -15,7 +15,7 @@ export const authMiddleware = async (req, res, next) => {
         if (req.cookies && req.cookies.token) {
             token = req.cookies.token// at top of authMiddleware (temporary)
             console.log("Incoming cookies:", req.cookies);
-            
+
         }
         // Fallback to Authorization header
         else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -36,13 +36,20 @@ export const authMiddleware = async (req, res, next) => {
         // ✅ Verify JWT
         const decoded = jwt.verify(token, JWT_SECRET);
 
+        // Handle different token field names gracefully
+        const adminId = decoded.adminId || decoded.id || decoded._id;
+
+        if (!adminId) throw new Error('Invalid token payload: adminId missing');
+
         // ✅ Find admin in DB (excluding the password)
-        const admin = await Admin.findById(decoded.adminId).select('-password');
+        const admin = await Admin.findById(adminId).select('-password');
         if (!admin) {
             throw new Error('Admin not found');
         }
         // ✅ Attach admin to request
         req.admin = admin;
+        console.log("✅ Authenticated Admin:", req.admin._id);
+        
         next();
     } catch (err) {
         console.error("Auth error:", err.message);

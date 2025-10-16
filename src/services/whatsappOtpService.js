@@ -5,8 +5,9 @@ import { checkBalance, deduct } from "./walletService.js";
 
 export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength}) => {
     // 1. Check wallet balance
-    const hasBalance = await checkBalance(admin._id);
-    if(!hasBalance) throw new Error('Insufficient wallet balance');
+    const whatsappCost = parseFloat(process.env.WHATSAPP_API_COST || '20')
+    const hasBalance = await checkBalance(admin._id, whatsappCost);
+    if(!hasBalance) throw new Error('Insufficient wallet balance for WhatsaApp OTP');
 
     // Generate secret + OTP
     const rawSecret = generateSecret(32);
@@ -37,7 +38,7 @@ export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength}) => {
 
     //( 5. Deduct from wallet per API call
     if(whatsappResp.success) {
-        await deduct(admin._id, parseFloat(process.env.WHATSAPP_API_COST || '1000000'))
+        await deduct(admin._id, whatsappCost, 'WhatsApp OTP sent');
     }
 
     return { otpDoc, whatsappResp }

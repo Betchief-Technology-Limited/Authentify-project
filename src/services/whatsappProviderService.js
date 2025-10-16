@@ -9,7 +9,7 @@ const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 export const sendWhatsappMessage = async (to, message) => {
     try {
         const resp = await axios.post(
-            `https://graph.facebook.com/v20.0${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+            `https://graph.facebook.com/v20.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
             {
                 messaging_product: "whatsapp",
                 to: to, // must be full international format, e.g "+2348130841061"

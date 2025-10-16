@@ -7,7 +7,8 @@ import { checkBalance, deduct } from "./walletService.js";
 export const createAndSendOtpSms = async ({ admin, to, otpLength }) => {
 
     //  1) Check wallet balance
-    const hasBalance = await checkBalance(admin._id);
+    const smsCost = parseFloat(process.env.SMS_API_COST || '10')
+    const hasBalance = await checkBalance(admin._id, smsCost);
     if (!hasBalance) {
         throw new Error('Insufficient wallet balance. Please top-up so as to be able to send OTP ');
     }
@@ -44,7 +45,7 @@ export const createAndSendOtpSms = async ({ admin, to, otpLength }) => {
 
     // 5) Deduct wallet per OTP sent
     if(smsResp.success){
-        await deduct(admin._id, parseFloat(process.env.SMS_API_COST || '10'));
+        await deduct(admin._id, smsCost, 'SMS OTP sent');
     }
 
     return { otpDoc, smsResp }
