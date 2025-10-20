@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 import dotenv from 'dotenv';
+import Wallet from '../models/wallet.js';
 
 dotenv.config();
 
@@ -23,6 +24,10 @@ export const adminLogIn = async (req, res) => {
         // check if the password used during signing up and saved in the database matches the one been used during login
         const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
+
+        // ✅ Fetch live wallet from the database
+        const wallet = await Wallet.findOne({ admin: admin._id });
+        const currentBalance = wallet ? wallet.balance : 0;
 
 
         // Generate JWT
@@ -49,7 +54,7 @@ export const adminLogIn = async (req, res) => {
                 firstName: admin.firstName,
                 lastName: admin.lastName,
                 email: admin.email,
-                walletBalance: admin.walletBalance,
+                walletBalance: currentBalance,
                 testApiKeys: admin.apiKeys.test,
                 liveApiKeys: admin.apiKeys.live
             },

@@ -18,3 +18,7 @@ Notes:
 - Replace KYC adapter stubs with real provider endpoints when ready.
 
 
+This is shud be a major requirements dat if the frontend app/ device tracking is not there den the otp generation will not be possible and then. 
+
+Have it at the back of ur mind that we r moving away from mobishastra and going directly to the SMS provider. 
+We are getting directly from MTN and not third party like mobishastra. 

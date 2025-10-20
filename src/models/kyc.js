@@ -18,7 +18,8 @@ const kycSchema = new mongoose.Schema({
     cost: { type: Number, required: true },
     status: {
         type: String,
-        enum: ["pending", "verified", "failed"]
+        enum: ["pending", "verified", "failed"],
+        default: 'pending'
     },
     responseData: { type: Object },// stores API 
     providerResponseCode: { type: String },

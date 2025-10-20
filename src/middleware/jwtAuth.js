@@ -49,10 +49,13 @@ export const authMiddleware = async (req, res, next) => {
         // ✅ Attach admin to request
         req.admin = admin;
         console.log("✅ Authenticated Admin:", req.admin._id);
-        
+
         next();
     } catch (err) {
-        console.error("Auth error:", err.message);
-        throw err; // ❌ don’t send response, let authOrApiKey handle
+        console.error('Auth error:', err.message);
+        return res.status(401).json({
+            message: 'Authentication failed',
+            error: err.message
+        })
     }
 };

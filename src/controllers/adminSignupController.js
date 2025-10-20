@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import Admin from '../models/Admin.js';
 import { generateApiKeys } from '../utils/apiKeyGenerator.js';
+import Wallet from '../models/wallet.js';
 
 
 
@@ -46,6 +47,13 @@ export const adminSignUp = async (req, res) => {
         });
 
         await newAdmin.save();
+
+        // ✅Automatically create wallet for this admin
+        await Wallet.create({
+            admin: newAdmin._id,
+            balance: 0,
+            history: []
+        });
 
         res.status(201).json({ 
             success: true, 

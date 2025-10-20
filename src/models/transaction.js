@@ -12,7 +12,7 @@ const transactionSchema = new mongoose.Schema({
         'whatsapp', //Whatsapp OTP
         'mobishastra', //SMS OTP
         'kyc', //any KYC verification
-        'email' //email notification
+        'email_service' //email notification
     ], required: true },
     description: { type: String },
     rawPayLoad: { type: Object }
