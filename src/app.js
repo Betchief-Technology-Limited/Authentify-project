@@ -19,7 +19,7 @@ app.use(morgan('dev'));
 
 // CORS with credentials support
 app.use(cors({
-    origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
+    origin: 'http://localhost:3000', //this will be replaced with the real frontend URL
     credentials: true
 }));
 
