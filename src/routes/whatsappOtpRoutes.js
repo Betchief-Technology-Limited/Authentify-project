@@ -1,5 +1,5 @@
 import express from 'express';
-import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
+import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
 import { sendWhatsappOtp, verifyWhatsappOtp } from '../controllers/whatsappOtpController.js';
 
 const whatsappRouter = express.Router();

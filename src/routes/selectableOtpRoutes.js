@@ -1,5 +1,5 @@
 import express from 'express';
-import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
+import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
 import { generateSelectableOtp, verifySelectableOtp } from '../controllers/selectableOtpController.js';
 
 const selectableRouter = express.Router();

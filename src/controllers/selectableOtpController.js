@@ -40,7 +40,7 @@ export const generateSelectableOtp = async (req, res) => {
             status: 'pending',
             verified: false,
             attempts: 0,
-            maxAttempts: 5,
+            maxAttempts: 1,
             meta: { digits, optionsCount, channel }
         });
 

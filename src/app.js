@@ -11,6 +11,8 @@ import whatsappRouter from './routes/whatsappOtpRoutes.js';
 import telegramRouter from './routes/telegramOtpRoutes.js';
 import selectableRouter from './routes/selectableOtpRoutes.js';
 import kycRouter from './routes/kycRoutes.js';
+import emailRouter from './routes/emailRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 // import { testRouter } from './routes/testRoutes.js';
 
 const app = express();
@@ -39,6 +41,8 @@ app.use('/api/wallet', walletRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/otp/selectable', selectableRouter);
 app.use('/api/kyc', kycRouter);
+app.use('/api/email', emailRouter)
+app.use('/api/organization', organizationRoutes);
 // app.use('/api/otp', testRouter)
 
 export default app;

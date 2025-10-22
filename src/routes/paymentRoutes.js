@@ -4,7 +4,7 @@ import {
     paymentInit,
     flutterwaveWebhook
 } from '../controllers/paymentController.js';
-import { authMiddleware } from '../middleware/jwtAuth.js';
+import { authMiddleware } from '../middlewares/jwtAuth.js';
 
 const paymentRouter = express.Router();
 

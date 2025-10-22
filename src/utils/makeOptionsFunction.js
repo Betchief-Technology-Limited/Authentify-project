@@ -1,6 +1,6 @@
 // Helper: generate decoy options
 
-export default function makeOptions(correctOtp, count = 3, digits = 2) {
+export default function makeOptions(correctOtp, count = 3, digits = 3) {
     const optionsSet = new Set([correctOtp]);
     while (optionsSet.size < count) {
         const decoy = String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, '0');

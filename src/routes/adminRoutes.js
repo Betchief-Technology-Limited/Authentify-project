@@ -2,7 +2,7 @@ import express from 'express';
 import { adminSignUp } from '../controllers/adminSignupController.js';
 import { adminLogIn, adminLogout } from '../controllers/adminSigninControlller.js';
 import { getCurrentAdmin } from '../controllers/getCurrentAdminController.js';
-import { authMiddleware } from '../middleware/jwtAuth.js';
+import { authMiddleware } from '../middlewares/jwtAuth.js';
 
 export const adminRouter = express.Router();
 

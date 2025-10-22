@@ -1,5 +1,5 @@
 import express from 'express';
-import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
+import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
 import { sendSmsOtp, verifySmsOtp } from '../controllers/otpController.js'
 
 export const otpSmsRouter = express.Router()
