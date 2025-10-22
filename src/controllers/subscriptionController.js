@@ -71,7 +71,7 @@ export const unsubscribeService = async (req, res) => {
         subscription.unsubscribedAt = new Date();
         await subscription.save();
 
-        res.json({ suucess: true, message: `${subservice} unsubscribed successfully!!!` });
+        res.json({ success: true, message: `${subservice} unsubscribed successfully!!!` });
     } catch (err) {
         console.error('Unsubscribe error:', err)
         res.status(500).json({ success: false, message: 'Internal server error' })
