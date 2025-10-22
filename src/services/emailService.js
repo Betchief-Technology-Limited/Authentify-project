@@ -121,15 +121,17 @@
 // };
 
 import nodemailer from 'nodemailer';
-import Email from '../models/email';
-import Transaction from '../models/transaction';
-import Wallet from '../models/wallet';
-import EmailTemplate from '../models/emailTemplate';
-import getSmtpPassword from '../utils/sesSmtpPassword';
-import { getEmailProvider } from '../utils/emailProvider';
+import Email from '../models/email.js';
+import Transaction from '../models/transaction.js';
+import Wallet from '../models/wallet.js';
+import EmailTemplate from '../models/emailTemplate.js';
+import getSmtpPassword from '../utils/sesSmtpPassword.js';
+import { getEmailProvider } from '../utils/emailProvider.js';
+import { sendViaSendGrid } from '../utils/sendGridProvider.js';
 
 const EMAIL_COST = parseFloat(process.env.EMAIL_API_COST || '1');
 
+// AWS SES SMTP credentials
 const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY;
 const SMTP_PASS = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
 const SMTP_HOST = process.env.SMTP_HOST;
@@ -138,45 +140,48 @@ const SMTP_PORT = process.env.SMTP_PORT;
 const SMTP_SECURE = process.env.SMTP_SECURE;
 const SMTP_REJECT_UNAUTHORIZED = process.env.SMTP_REJECT_UNAUTHORIZED;
 const SMTP_ENVELOPE_FROM = process.env.SMTP_ENVELOPE_FROM;
-const EMAIL_FROM = process.env.EMAIL_FROM
+const EMAIL_FROM = process.env.EMAIL_FROM;
 
-//cache transporter so we do not recreate it every request
 let transporter = null;
 
+// ------------------------------------------------------------------
+// ✅ Transporter Factory (cache-enabled)
+// ------------------------------------------------------------------
 const getTransporter = () => {
     if (transporter) return transporter;
 
-    // if SMTP not configured, return null
-    if (!SMTP_HOST || !SMTP_USER || SMTP_PASS) {
+    // Corrected logic: ensure all 3 exist
+    if (!SMTP_HOST || !SMTP_USER || !AWS_SECRET_KEY) {
+        console.error('SMTP config missing required values');
         return null;
     }
+
+    const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION)
 
     transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port: parseInt(SMTP_PORT || '587', 10),
-        secure: (SMTP_SECURE === 'true'), //true for 465, false for 587
+        secure: SMTP_SECURE === 'true',
         auth: {
             user: SMTP_USER,
-            pass: SMTP_PASS
+            pass: smtpPass
         },
-
-        //this is to avoid self-signed issues
         tls: {
             rejectUnauthorized: SMTP_REJECT_UNAUTHORIZED !== 'false'
-        }
+        },
     });
+    console.log('✅ AWS SES SMTP transporter initialized.');
+    return transporter;
+};
 
-    return transporter
-}
-
-// Send using SMTP; supports custom `from` (display name + email)
+// ------------------------------------------------------------------
+// ✅ Send via AWS SES SMTP
+// ------------------------------------------------------------------
 const sendViaSmtp = async ({ from, to, subject, body }) => {
     const t = getTransporter();
     if (!t) return { ok: false, error: 'SMTP not configured' };
 
-    // `envelope` ensures real MAIL FROM (envelope) and prevents some provider issues. 
-    // If you want to set a separate envelope.from, set process.env.ENVELOPE_FROM
-    const envelopeFrom = SMTP_ENVELOPE_FROM || (EMAIL_FROM || SMTP_USER);
+    const envelopeFrom = SMTP_ENVELOPE_FROM || EMAIL_FROM || SMTP_USER;
 
     const mailOptions = {
         from: from || EMAIL_FROM || SMTP_USER,
@@ -186,13 +191,21 @@ const sendViaSmtp = async ({ from, to, subject, body }) => {
         envelope: {
             from: envelopeFrom,
             to
-        }
+        },
     };
-
-    const info = await t.sendMail(mailOptions);
-    return { ok: true, raw: info }
+    try {
+        const info = await t.sendMail(mailOptions);
+        console.log('✅ SES Email sent:', info.messageId || info);
+        return { ok: true, raw: info }
+    } catch (err) {
+        console.error('❌ SES send error:', err);
+        return { ok: false, error: err.message || String(err) };
+    }   
 };
 
+// ------------------------------------------------------------------
+// ✅ Template Creation
+// ------------------------------------------------------------------
 export const createTemplate = async ({ admin, name, subject, body, description }) => {
     const tpl = await EmailTemplate.findOneAndUpdate(
         { admin: admin._id, name },
@@ -202,16 +215,17 @@ export const createTemplate = async ({ admin, name, subject, body, description }
     return tpl;
 };
 
-// core send flow 
-
-export const sendEmail = async ({ admin, from, to, subject, templateId }) => {
-    // 1) check wallet
+// ------------------------------------------------------------------
+// ✅ Core Send Flow
+// ------------------------------------------------------------------
+export const sendEmail = async ({ admin, from, to, subject, body, templateId, provider }) => {
+    // 1️⃣ Check wallet
     const wallet = await Wallet.findOne({ admin: admin._id });
     if (!wallet || wallet.balance < EMAIL_COST) {
-        throw new Error('Insufficient wallet balance. Please top-up to send email')
+        throw new Error('Insufficient wallet balance. Please top-up to send email.');
     }
 
-    // 2) Create transaction (pending)
+    // 2️⃣ Create transaction (pending)
     const tx_ref = `email_${admin._id}_${Date.now()}`;
     const transaction = await Transaction.create({
         admin: admin._id,
@@ -219,43 +233,47 @@ export const sendEmail = async ({ admin, from, to, subject, templateId }) => {
         amount: EMAIL_COST,
         status: 'pending',
         provider: 'email_service',
-        description: `Email send to ${to}`
+        description: `Email send to ${to}`,
     });
 
-    //  3) Create Email record (pending)
+    // 3️⃣ Determine provider
+    const resolvedProvider = provider || getEmailProvider();
+
+    // 4️⃣ Create email record (pending)
     const emailDoc = await Email.create({
         admin: admin._id,
+        from,
         to,
         subject,
         body,
         template: templateId || null,
         status: 'pending',
         tx_ref,
-        provider: getEmailProvider()
+        provider: resolvedProvider,
     });
 
-    // 4) Send (real or mock)
+    // 5️⃣ Send using selected provider
     let sendResp;
-    if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
-        try {
-            sendResp = await sendViaSmtp({ from, to, subject, body })
-        } catch (err) {
-            sendResp = { ok: false, error: err.message || String(err) };
+    try {
+        if (resolvedProvider === 'smtp') {
+            sendResp = await sendViaSmtp({ from, to, subject, body });
+        } else if (resolvedProvider === 'sendgrid') {
+            sendResp = await sendViaSendGrid({ from, to, subject, body });
+        } else {
+            sendResp = { ok: true, mock: true, message: 'Mock send OK' };
         }
-    } else {
-        sendResp = { ok: true, mock: true, message: 'Mock send Ok' }
+    } catch (err) {
+        sendResp = { ok: false, error: err.message || String(err) };
     }
 
-    // 5) Update email doc & transaction & wallet
+    // 6️⃣ Update records & wallet
     if (sendResp.ok) {
-        // deduct wallet now
-        wallet.balance = (wallet.balance || 0) - EMAIL_COST;
+        wallet.balance -= EMAIL_COST;
         wallet.history.push({
             type: 'debit',
             amount: EMAIL_COST,
-            description: `Email send to ${to}`
+            description: `Email send to ${to}`,
         });
-
         await wallet.save();
 
         emailDoc.status = 'sent';
@@ -264,7 +282,7 @@ export const sendEmail = async ({ admin, from, to, subject, templateId }) => {
 
         transaction.status = 'successful';
         transaction.rawPayLoad = sendResp;
-        await emailDoc.save();
+        await transaction.save();
     } else {
         emailDoc.status = 'failed';
         emailDoc.providerResponse = sendResp;
@@ -276,9 +294,11 @@ export const sendEmail = async ({ admin, from, to, subject, templateId }) => {
     }
 
     return { emailDoc, transaction, sendResp };
-}
+};
 
+// ------------------------------------------------------------------
+// ✅ Fetch Template
+// ------------------------------------------------------------------
 export const getTemplate = async ({ admin, name }) => {
-    const tpl = await EmailTemplate.findOne({ admin: admin._id, name });
-    return tpl;
-}
+    return await EmailTemplate.findOne({ admin: admin._id, name });
+};

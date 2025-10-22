@@ -1,7 +1,7 @@
 import express from 'express';
 import { getWallet, rechargeWallet } from '../controllers/walletController.js';
 // import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
-import { authOrApiKey } from '../middleware/authOrApiKey.js';
+import { authOrApiKey } from '../middlewares/authOrApiKey.js';
 
 const walletRouter = express.Router();
 

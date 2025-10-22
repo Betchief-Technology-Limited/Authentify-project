@@ -1,6 +1,6 @@
 import express from 'express';
 import { sendTelegramOtp, verifyTelegramOtp } from '../controllers/telegramOtpController.js';
-import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
+import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
 import { handleTelegramWebhook } from '../controllers/telegramWebhookController.js'
 
 const telegramRouter = express.Router();

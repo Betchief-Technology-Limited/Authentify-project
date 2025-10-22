@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyKyc, getKycRecordStatus } from '../controllers/kycController.js';
-import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
+import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
 
 const kycRouter = express.Router();
 
