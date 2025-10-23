@@ -1,4 +1,6 @@
 import mongoose, { mongo } from "mongoose";
+import { userDB } from "../config/db.js";
+
 
 const subscriptionSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: "Admin", required: true },
@@ -14,6 +16,6 @@ const subscriptionSchema = new mongoose.Schema({
     unsubscribedAt: { type: Date }
 }, { timestamps: true });
 
-const Subscription = mongoose.model('Subscription', subscriptionSchema);
+const Subscription = userDB.model('Subscription', subscriptionSchema);
 
 export default Subscription;

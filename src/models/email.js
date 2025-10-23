@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const emailSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
@@ -13,5 +14,5 @@ const emailSchema = new mongoose.Schema({
     tx_ref: { type: String }, //transaction reference for billing
 }, { timestamps: true });
 
-const Email = mongoose.model('Email', emailSchema);
+const Email = userDB.model('Email', emailSchema);
 export default Email

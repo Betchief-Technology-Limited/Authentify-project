@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { orgDB } from "../config/db.js";
 
 const organizationSchema = new mongoose.Schema(
     {
@@ -145,7 +146,7 @@ const organizationSchema = new mongoose.Schema(
         },
         verifiedAt: { type: Date }
     },
-    { timestamps: true, collection: "Organization_Registration" }
+    { timestamps: true, collection: "Organization_names" }
 );
-const Organization = mongoose.model('Organization', organizationSchema);
+const Organization = orgDB.model('Organization', organizationSchema);
 export default Organization;

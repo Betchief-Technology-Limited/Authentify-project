@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const apiKeysSchema = new mongoose.Schema({
     publicKey: { type: String, default: null },
@@ -22,6 +23,6 @@ const adminSchema = new mongoose.Schema({
 
 );
 
-const Admin = new mongoose.model('Admin', adminSchema);
+const Admin = userDB.model('Admin', adminSchema);
 
 export default Admin;

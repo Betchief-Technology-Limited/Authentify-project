@@ -1,4 +1,5 @@
-import mongoose, { mongo } from 'mongoose';
+import mongoose from 'mongoose';
+import { userDB } from '../config/db.js';
 
 const kycSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
@@ -29,5 +30,5 @@ const kycSchema = new mongoose.Schema({
 { timestamps: true }
 );
 
-const Kyc = mongoose.model('Kyc', kycSchema);
+const Kyc = userDB.model('Kyc', kycSchema);
 export default Kyc
