@@ -83,7 +83,7 @@ export const getActiveSubscriptions = async (req, res) => {
     try {
         const admin = req.admin;
         const subscription = await Subscription.find({ admin: admin._id, active: true })
-        res.json({ success: true, subscription });
+        return res.json({ success: true, subscription });
     } catch (err) {
         console.error('Get subscriptions error:', err)
         res.status(500).json({ success: false, message: 'Internal server error' });

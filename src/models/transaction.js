@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const transactionSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
@@ -18,5 +19,5 @@ const transactionSchema = new mongoose.Schema({
     rawPayLoad: { type: Object }
 }, { timestamps: true });
 
-const Transaction = new mongoose.model('Transaction', transactionSchema);
+const Transaction = userDB.model('Transaction', transactionSchema);
 export default Transaction

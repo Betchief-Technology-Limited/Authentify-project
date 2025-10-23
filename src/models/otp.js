@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const otpSchema = new mongoose.Schema({
    admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
@@ -44,6 +45,6 @@ const otpSchema = new mongoose.Schema({
 }
 );
 
-const Otp = new mongoose.model('Otp', otpSchema)
+const Otp = userDB.model('Otp', otpSchema)
 
 export default Otp

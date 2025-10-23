@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const walletSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
@@ -13,6 +14,6 @@ const walletSchema = new mongoose.Schema({
     ]
 }, { timestamps: true });
 
-const Wallet = new mongoose.model('Wallet', walletSchema)
+const Wallet = userDB.model('Wallet', walletSchema)
 
 export default Wallet

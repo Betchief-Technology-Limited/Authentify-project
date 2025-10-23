@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { userDB } from "../config/db.js";
 
 const emailTemplateSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
@@ -8,6 +9,6 @@ const emailTemplateSchema = new mongoose.Schema({
     description: { type: String }
 }, { timestamps: true });
 
-const EmailTemplate = mongoose.model('EmailTemplate', emailTemplateSchema);
+const EmailTemplate = userDB.model('EmailTemplate', emailTemplateSchema);
 
 export default EmailTemplate;
