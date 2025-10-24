@@ -1,4 +1,4 @@
-import express from 'express';  
+import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
@@ -23,11 +23,39 @@ const app = express();
 
 app.use(morgan('dev'));
 
-// CORS with credentials support
-app.use(cors({
-    origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
-    credentials: true
-}));
+
+// ✅ Allowed origins
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://your-production-frontend.com",
+];
+
+// ✅ Configure CORS
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true); // Postman or mobile apps
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.warn(`🚫 CORS blocked: ${origin}`);
+            return callback(null, false);
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+};
+
+// ✅ Apply globally before routes
+app.use(cors(corsOptions));
+
+// ✅ (Optional) Handle preflight safely for Express 5
+app.options(/.*/, cors(corsOptions));
+
+// app.use(cors({
+//     origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
+//     credentials: true
+// }));
 
 // Parse cookies
 app.use(cookieParser());
@@ -54,17 +82,17 @@ app.use('/api/service-admin', serviceAdminRouter)
 
 // 404 handler
 app.use((req, res) =>
-  res.status(404).json({ success: false, message: "Route not found" })
+    res.status(404).json({ success: false, message: "Route not found" })
 );
 
 // Centralized error handler
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  const status = err.status || 500;
-  res.status(status).json({
-    success: false,
-    message: err.message || "Internal server error",
-  });
+    console.error("Unhandled error:", err);
+    const status = err.status || 500;
+    res.status(status).json({
+        success: false,
+        message: err.message || "Internal server error",
+    });
 });
 
 export default app;

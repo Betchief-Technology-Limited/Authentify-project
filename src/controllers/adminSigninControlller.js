@@ -36,12 +36,12 @@ export const adminLogIn = async (req, res) => {
     );
 
     // ✅ Determine cookie security based on environment
-    const isLocalFrontend = req.headers.origin?.includes("localhost");
+    const isLocal = req.headers.origin?.includes("localhost");
 
     res.cookie('token', token, {
       httpOnly: true,              // can't be accessed via JS
-      secure: !isLocalFrontend,    // false for localhost, true for production
-      sameSite: isLocalFrontend ? "lax" : "none", // lax for localhost, none for cross-site prod
+      secure: !isLocal,    // false for localhost, true for production
+      sameSite: isLocal ? "lax" : "none", // lax for localhost, none for cross-site prod
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -68,12 +68,12 @@ export const adminLogIn = async (req, res) => {
 
 // ✅ Logout Controller
 export const adminLogout = (req, res) => {
-  const isLocalFrontend = req.headers.origin?.includes("localhost");
+  const isLocal = req.headers.origin?.includes("localhost");
 
   res.clearCookie('token', {
     httpOnly: true,
-    secure: !isLocalFrontend,
-    sameSite: isLocalFrontend ? "lax" : "none",
+    secure: !isLocal,
+    sameSite: isLocal ? "lax" : "none",
   });
 
   res.json({ message: 'Logout successful' });
