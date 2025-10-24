@@ -36,14 +36,14 @@ export const adminLogIn = async (req, res) => {
     );
 
     // ✅ Determine cookie security based on environment
-    const origin = req.headers.origin || "";
-    const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
-    // const isLocal = req.headers.origin?.includes("localhost");
+    // const origin = req.headers.origin || "";
+    // const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
+    // // const isLocal = req.headers.origin?.includes("localhost");
 
     res.cookie('token', token, {
       httpOnly: true,              // can't be accessed via JS
-      secure: !isLocal,    // false for localhost, true for production
-      sameSite: isLocal ? "lax" : "none", // lax for localhost, none for cross-site prod
+      secure: false,    // false for localhost, true for production
+      sameSite: "lax" // lax for localhost, none for cross-site prod
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -70,13 +70,13 @@ export const adminLogIn = async (req, res) => {
 
 // ✅ Logout Controller
 export const adminLogout = (req, res) => {
-  const origin = req.headers.origin || "";
-  const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
-  // const isLocal = req.headers.origin?.includes("localhost");
+  // const origin = req.headers.origin || "";
+  // const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
+  // // const isLocal = req.headers.origin?.includes("localhost");
   res.clearCookie('token', {
     httpOnly: true,
-    secure: !isLocal,
-    sameSite: isLocal ? "lax" : "none",
+    secure: false,
+    sameSite: "lax",
   });
 
   res.json({ message: 'Logout successful' });
