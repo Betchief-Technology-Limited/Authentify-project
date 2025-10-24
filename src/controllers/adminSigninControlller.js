@@ -43,7 +43,7 @@ export const adminLogIn = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,              // can't be accessed via JS
       secure: false,    // false for localhost, true for production
-      sameSite: "lax" // lax for localhost, none for cross-site prod
+      sameSite: "lax", // lax for localhost, none for cross-site prod
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
