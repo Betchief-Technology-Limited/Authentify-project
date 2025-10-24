@@ -11,10 +11,10 @@ export const getCurrentAdmin = async (req, res) => {
             return res.status(404).json({ message: "Admin not found" });
         }
         
-        res.json(admin); // <--- returns admin object directly
+        return res.json(admin); // <--- returns admin object directly
     } catch (err) {
         console.error("Error fetching admin:", err);
-        res.status(500).json({ message: "Error fetching admin", error: err.message });
+        return res.status(500).json({ message: "Error fetching admin", error: err.message });
     }
 };
 
