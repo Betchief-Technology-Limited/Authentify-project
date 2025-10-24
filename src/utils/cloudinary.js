@@ -1,20 +1,35 @@
-import { v2 as cloudianry } from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
 
-cloudianry.config({
+cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_key: process.env.CLOUDINARY_CLOUD_API_KEY,
+    api_secret: process.env.CLOUDINARY_CLOUD_SECRET_KEY
 })
 
-export const uploadToCloudinary = async (filePath, folder) => {
+/**
+ * Upload a Buffer to Cloudinary using upload_stream.
+ * @param {Buffer} buffer
+ * @param {string} folder
+ * @param {string} [filename]
+ * @returns {Promise<string>} secure_url
+ */
+
+export const uploadToCloudinary = async (buffer, folder, filename = undefined) => {
     try {
-        const result = await cloudianry.uploader.upload(filePath, {
-            folder,
-            resource_type: 'auto'
+        const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder, public_id: filename, resource_type: "auto" },
+                (err, result) => {
+                    if (err) reject(err);
+                    else resolve(result);
+                }
+            );
+            stream.end(buffer);
         });
-        return result.secure_url
+
+        return result.secure_url;
     } catch (err) {
-        console.error('Cloudinary Upload Error:', err);
-        throw new Error('File upload failed')
+        console.error("Cloudinary Upload Error:", err);
+        throw new Error("File upload failed.");
     }
-}
+};

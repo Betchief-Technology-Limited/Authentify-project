@@ -8,34 +8,36 @@ import {
     verifyOrganizationManually,
     getOrganizationVerificationStatus
 } from '../controllers/organizationController.js';
-import { apiKeyAuth } from '../middlewares/apiKeyAuth.js';
+
 
 const organizationRouter = express.Router();
 
 // Create new organization (with file uploads)
 organizationRouter.post(
-    '/', upload.fields([
+    '/',
+    upload.fields([
         { name: 'certificateOfIncorporation', maxCount: 1 },
         { name: 'particularsOfDirectors', maxCount: 1 },
         { name: 'particularsOfShareholders', maxCount: 1 },
         { name: 'operatingLicence', maxCount: 1 }
-    ]), 
-    apiKeyAuth, createOrganization
+    ]),
+    createOrganization
 );
 
 // Get organization by clientId
-organizationRouter.get('/:clientId', apiKeyAuth, getOrganizationByClientId);
+organizationRouter.get('/:clientId',getOrganizationByClientId);
 
 // Update organization info
-organizationRouter.put('/:id', apiKeyAuth, upload.any(), updateOrganization);
+organizationRouter.put('/:id', upload.any(), updateOrganization);
 
 // Delete organization
-organizationRouter.delete('/:id', apiKeyAuth, deleteOrganization);
+organizationRouter.delete('/:id', deleteOrganization);
 
-// Manual verification (admin marks as approved/rejected)
-organizationRouter.put('/verify/:id', apiKeyAuth, verifyOrganizationManually);
+// check verification status (used by frontend to check progress. For client dashboard)
+organizationRouter.get('/status/:clientId', getOrganizationVerificationStatus);
 
-// Fetch verification status (used by frontend to check progress)
-organizationRouter.get('/status/:clientId', apiKeyAuth, getOrganizationVerificationStatus);
+// Manual verification status (admin marks as approved/rejected)
+organizationRouter.patch('/verify/:id', verifyOrganizationManually);
+
 
 export default organizationRouter
