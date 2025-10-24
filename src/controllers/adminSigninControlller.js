@@ -36,7 +36,9 @@ export const adminLogIn = async (req, res) => {
     );
 
     // ✅ Determine cookie security based on environment
-    const isLocal = req.headers.origin?.includes("localhost");
+    const origin = req.headers.origin || "";
+    const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
+    // const isLocal = req.headers.origin?.includes("localhost");
 
     res.cookie('token', token, {
       httpOnly: true,              // can't be accessed via JS
@@ -68,8 +70,9 @@ export const adminLogIn = async (req, res) => {
 
 // ✅ Logout Controller
 export const adminLogout = (req, res) => {
-  const isLocal = req.headers.origin?.includes("localhost");
-
+  const origin = req.headers.origin || "";
+  const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
+  // const isLocal = req.headers.origin?.includes("localhost");
   res.clearCookie('token', {
     httpOnly: true,
     secure: !isLocal,
