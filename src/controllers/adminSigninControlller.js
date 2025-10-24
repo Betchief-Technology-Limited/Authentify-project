@@ -34,7 +34,7 @@ export const adminLogIn = async (req, res) => {
         const token = jwt.sign(
             { adminId: admin._id, email: admin.email },
             SECRET_KEY,
-            { expiresIn: "24h" }
+            { expiresIn: "24hrs" }
         );
 
         // ✅ Send token in HttpOnly cookie
