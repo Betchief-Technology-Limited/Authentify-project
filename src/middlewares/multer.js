@@ -1,21 +1,24 @@
-import multer from "multer";
-import fs from 'fs';
+import multer from 'multer';
 
-const tempDir = 'tmp';
-if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+const storage = multer.memoryStorage();
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, tempDir),
-    filename: (req, file, cb) => {
-        const uniqueName = `${Date.now()}-${file.originalname.replace(/\s+/g, "_")}`
-        cb(null, uniqueName);
-    }
-});
+const allowed = new Set([
+    "application/pdf",
+    "image/jpeg",
+    "image/jpg",
+    "image/png"
+]);
 
 const fileFilter = (req, file, cb) => {
-const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
-if(allowed.includes(file.mimetype)) cb(null, true);
-else cb(new Error('Invalid file type. Only PDF, JPG, and PNG allowed.'));
+    if (allowed.has(file.mimetype)) return cb(null, true);
+    cb(new Error('Invalid file type. Only PDF, JPG, and PNG allowed'));
 };
 
-export const upload = multer({ storage, fileFilter })
+export const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024, //10MB per file
+        files: 4,   //safety: max 4 files
+    }
+})

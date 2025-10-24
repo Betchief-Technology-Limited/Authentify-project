@@ -38,10 +38,11 @@ export const adminLogIn = async (req, res) => {
         );
 
         // ✅ Send token in HttpOnly cookie
+        const isLocalFrontend = req.headers.origin?.includes("localhost")
         res.cookie('token', token, {
             httpOnly: true, //cant be access with JS
-            secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: !isLocalFrontend, //only over http then switch to https when it is over in production
+            sameSite: "none",
             maxAge: 60 * 60 * 1000, // 1hour
         })
 
@@ -69,10 +70,11 @@ export const adminLogIn = async (req, res) => {
 
 // Logout Controller
 export const adminLogout = (req, res) => {
+    const isLocalFrontend = req.headers.origin?.includes("localhost")
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: !isLocalFrontend,
+        sameSite: "none"
     });
     res.json({ message: 'Logout successful' });
 }

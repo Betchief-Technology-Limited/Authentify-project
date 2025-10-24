@@ -12,8 +12,11 @@ import telegramRouter from './routes/telegramOtpRoutes.js';
 import selectableRouter from './routes/selectableOtpRoutes.js';
 import kycRouter from './routes/kycRoutes.js';
 import emailRouter from './routes/emailRoutes.js';
-import organizationRouter from './routes/organizationRoutes.js';
 import subscriptionRouter from './routes/subscriptionRoutes.js';
+import organizationRouter from './routes/organizationRoutes.js';
+import serviceAdminRouter from './routes/serviceAdminRoutes.js';
+
+
 // import { testRouter } from './routes/testRoutes.js';
 
 const app = express();
@@ -30,7 +33,8 @@ app.use(cors({
 app.use(cookieParser());
 
 // Parse JSON
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 
 // Mount routes
@@ -45,6 +49,22 @@ app.use('/api/kyc', kycRouter);
 app.use('/api/email', emailRouter);
 app.use('/api/organization', organizationRouter);
 app.use('/api/subscription', subscriptionRouter);
+app.use('/api/service-admin', serviceAdminRouter)
 // app.use('/api/otp', testRouter)
+
+// 404 handler
+app.use((req, res) =>
+  res.status(404).json({ success: false, message: "Route not found" })
+);
+
+// Centralized error handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  const status = err.status || 500;
+  res.status(status).json({
+    success: false,
+    message: err.message || "Internal server error",
+  });
+});
 
 export default app;
