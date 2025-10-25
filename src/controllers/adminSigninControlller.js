@@ -46,7 +46,8 @@ export const adminLogIn = async (req, res) => {
         // });
 
         // ✅ Detect if frontend is local
-        const isLocalFrontend = req.headers.origin?.includes("localhost");
+        const origin = req.headers.origin || "";
+        const isLocalFrontend = origin.includes("localhost");
 
         // ✅ Set JWT as HttpOnly cookie
         res.cookie("token", token, {
