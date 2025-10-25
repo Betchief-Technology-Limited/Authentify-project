@@ -52,15 +52,21 @@ export const loginServiceAdmin = async (req, res) => {
 
         const token = jwt.sign({ id: admin._id }, JWT_SECRET, { expiresIn: '7d' });
 
-        // ✅ Detect if frontend is local
-        const isLocalFrontend = req.headers.origin?.includes("localhost");
+        // // ✅ Detect if frontend is local
+        // const isLocalFrontend = req.headers.origin?.includes("localhost");
 
-        // ✅ Set JWT as HttpOnly cookie
-        res.cookie("serviceAdminToken", token, {
-            httpOnly: true,
-            secure: !isLocalFrontend, // false for localhost, true for live HTTPS
-            sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        // // ✅ Set JWT as HttpOnly cookie
+        // res.cookie("serviceAdminToken", token, {
+        //     httpOnly: true,
+        //     secure: !isLocalFrontend, // false for localhost, true for live HTTPS
+        //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
+        //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        // });
+        res.cookie('serviceAdminToken', token, {
+            httpOnly: true, //cant be access with JS
+            secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            maxAge: 60 * 60 * 1000, // 1hour
         });
 
         return res.status(200).json({
@@ -79,12 +85,17 @@ export const loginServiceAdmin = async (req, res) => {
 // LOGOUT
 // ========================
 export const logoutServiceAdmin = (req, res) => {
-    const isLocalFrontend = req.headers.origin?.includes("localhost");
+    // const isLocalFrontend = req.headers.origin?.includes("localhost");
 
-    res.clearCookie("serviceAdminToken", {
-        httpOnly: true,
-        secure: !isLocalFrontend, // false for localhost, true for production
-        sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
+    // res.clearCookie("serviceAdminToken", {
+    //     httpOnly: true,
+    //     secure: !isLocalFrontend, // false for localhost, true for production
+    //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
+    // });
+    res.cookie('serviceAdminToken', token, {
+        httpOnly: true, //cant be access with JS
+        secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     return res.status(200).json({
