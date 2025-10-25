@@ -4,7 +4,8 @@ import {
     loginServiceAdmin,
     logoutServiceAdmin,
     getAllOrganizations,
-    updateOrganizationStatus
+    updateOrganizationStatus,
+    resendVerificationEmail
 } from '../controllers/serviceAdminController.js';
 import { serviceAdminAuth } from '../middlewares/serviceAdminAuth.js';
 
@@ -35,5 +36,8 @@ serviceAdminRouter.get('/organizations', serviceAdminAuth, getAllOrganizations);
 
 // Verify or reject organization
 serviceAdminRouter.patch('/organization/:id/status', serviceAdminAuth, updateOrganizationStatus);
+
+// ✅ Manual email resend
+serviceAdminRouter.post('/organization/:id/resend', serviceAdminAuth, resendVerificationEmail)
 
 export default serviceAdminRouter;

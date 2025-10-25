@@ -1,4 +1,4 @@
-// middleware/universalAuth.js
+// middleware/apiKeyAuth.js
 import jwt from "jsonwebtoken";
 import Admin from "../models/Admin.js";
 import Subscription from "../models/subscription.js";
@@ -10,10 +10,11 @@ const JWT_SECRET = process.env.SECRET_KEY;
 export const apiKeyAuth = async (req, res, next) => {
   try {
     let tokenOrKey =
-      req.headers["x-api-key"] ||
+      req.cookies?.token || // 🔹 From HttpOnly cookie (JWT)
+      req.headers["x-api-key"] || // 🔹 From x-api-key header
       (req.headers.authorization &&
-        req.headers.authorization.split(" ")[1]);
-
+        req.headers.authorization.startsWith("Bearer ") &&
+        req.headers.authorization.split(" ")[1]); // 🔹 From Bearer header
     if (!tokenOrKey) {
       throw new Error("Missing API key or Bearer token");
     }

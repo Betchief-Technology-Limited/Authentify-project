@@ -144,7 +144,11 @@ const organizationSchema = new mongoose.Schema(
             trim: true,
             default: "",
         },
-        verifiedAt: { type: Date }
+        verifiedAt: { type: Date },
+        emailNotification: {
+            sent: { type: Boolean, default: false },
+            sentAt: { type: Date }
+        }
     },
     { timestamps: true, collection: "Organization_names" }
 );
