@@ -24,9 +24,10 @@ const app = express();
 app.use(morgan('dev'));
 
 
-// ✅ Allowed origins
+// // ✅ Allowed origins
 const allowedOrigins = [
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
     "https://your-production-frontend.com",
 ];
@@ -34,7 +35,7 @@ const allowedOrigins = [
 // ✅ Configure CORS
 const corsOptions = {
     origin: function (origin, callback) {
-        if (!origin) return callback(null, true); // Postman or mobile apps
+        if (!origin) return callback(null, true); 
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         } else {
@@ -77,7 +78,7 @@ app.use('/api/kyc', kycRouter);
 app.use('/api/email', emailRouter);
 app.use('/api/organization', organizationRouter);
 app.use('/api/subscription', subscriptionRouter);
-app.use('/api/service-admin', serviceAdminRouter)
+app.use('/api/serviceadmin', serviceAdminRouter);
 // app.use('/api/otp', testRouter)
 
 // 404 handler
@@ -95,4 +96,4 @@ app.use((err, req, res, next) => {
     });
 });
 
-export default app;
+export default app;;

@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import ServiceAdmin from '../models/serviceAdmin.js';
 import Organization from '../models/organization.js';
+import { sendEmail } from '../services/emailService.js';
+import { verifiedTemplate, rejectedTemplate } from '../utils/serviceAdminEmailTemplate.js';
+import { sendMail } from '../utils/mailerServiceAdmin.js';
 
 const JWT_SECRET = process.env.SERVICE_ADMIN_JWT_SECRET;
 
@@ -56,7 +59,7 @@ export const loginServiceAdmin = async (req, res) => {
         res.cookie("serviceAdminToken", token, {
             httpOnly: true,
             secure: !isLocalFrontend, // false for localhost, true for live HTTPS
-            sameSite: "none", // cross-origin support
+            sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
@@ -81,7 +84,7 @@ export const logoutServiceAdmin = (req, res) => {
     res.clearCookie("serviceAdminToken", {
         httpOnly: true,
         secure: !isLocalFrontend, // false for localhost, true for production
-        sameSite: "none",
+        sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
     });
 
     return res.status(200).json({
@@ -141,6 +144,32 @@ export const updateOrganizationStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: "Organization not found" });
         }
 
+        // -------EMAIL NOTIFICATION-------
+        const recipient = organization?.contactPerson.email || organization?.contactEmail || null //this contact.Email will be added later
+
+        if (recipient) {
+            try {
+                const tpl = status === "verified" ? verifiedTemplate(organization) : rejectedTemplate(organization, feedback);
+
+                await sendMail({
+                    to: recipient,
+                    subject: tpl.subject,
+                    html: tpl.html,
+                    text: tpl.text
+                });
+
+                // ✅ Mark email as sent successfully
+                organization.emailNotification.sent = true;
+                organization.emailNotification.sentAt = new Date();
+            } catch (mailErr) {
+                // Do not fail the API if email fails—log and continue
+                console.error("Email notify failed:", mailErr?.message || mailErr);
+            }
+        } else {
+            console.warn("No recipeint email found on organization. Skipped email notify")
+        }
+
+
         return res.status(200).json({
             success: true,
             message: `Organization ${status} successfully`,
@@ -151,5 +180,62 @@ export const updateOrganizationStatus = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Server error' })
     }
 }
+
+// ========================
+// MANUAL RESEND EMAIL NOTIFICATION
+// ========================
+export const resendVerificationEmail = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const organization = await Organization.findById(id);
+        if (!organization)
+            return res.status(404).json({ success: false, message: "Organization not found" });
+
+        // Determine recipient
+        const recipient =
+            organization?.contactPerson?.email ||
+            organization?.contactEmail ||
+            null;
+
+        if (!recipient)
+            return res.status(400).json({
+                success: false,
+                message: "No recipient email found for this organization",
+            });
+
+        // Determine which template to use
+        const status = organization.verificationStatus;
+        const tpl =
+            status === "verified"
+                ? verifiedTemplate(organization)
+                : rejectedTemplate(organization, organization.verificationFeedback);
+
+        await sendMail({
+            to: recipient,
+            subject: tpl.subject,
+            html: tpl.html,
+            text: tpl.text,
+        });
+
+        // ✅ Update email audit fields
+        organization.emailNotification.sent = true;
+        organization.emailNotification.sentAt = new Date();
+        await organization.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Email re-sent successfully",
+            data: organization,
+        });
+    } catch (error) {
+        console.error("Resend Email Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to resend email",
+            error: error.message,
+        });
+    }
+};
 
 
