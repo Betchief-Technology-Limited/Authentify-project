@@ -48,7 +48,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // or /.*/ if you prefer regex
+// ✅ Use regex for preflight requests (Express 5 fix)
+app.options(/.*/, cors(corsOptions));
 
 // app.use(cors({
 //     origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
