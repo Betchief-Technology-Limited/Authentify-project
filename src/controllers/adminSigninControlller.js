@@ -21,6 +21,13 @@ export const adminLogIn = async (req, res) => {
         const admin = await Admin.findOne({ email });
         if (!admin) return res.status(400).json({ message: 'Invalid email or password' });
 
+        // Check if the email has been verified by the client
+        if(!admin.emailVerified) {
+            return res.status(403).json({
+                message: "Please verify your email before logging in"
+            });
+        }
+
         // check if the password used during signing up and saved in the database matches the one been used during login
         const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
