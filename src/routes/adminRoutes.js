@@ -10,7 +10,7 @@ export const adminRouter = express.Router();
 adminRouter.post('/admin/signup', adminSignUp);
 adminRouter.post('/admin/login', adminLogIn);
 adminRouter.post('/admin/logout', adminLogout);
-adminRouter.get('/verify-email', verifyEmail)
+adminRouter.get('/admin/verify-email', verifyEmail)
 
 // IMPORTANT: use authMiddleware then getCurrentAdmin so response is the admin object 
 adminRouter.get('/admin/me', authOrApiKey, getCurrentAdmin);
