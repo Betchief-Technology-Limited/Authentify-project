@@ -1,7 +1,9 @@
 import bcrypt from 'bcrypt';
 import Admin from '../models/Admin.js';
+import crypto from 'crypto';
 import { generateApiKeys } from '../utils/apiKeyGenerator.js';
 import Wallet from '../models/wallet.js';
+import { sendVerificationEmail } from '../utils/sendEmailVerificationForSignup.js';
 
 
 
@@ -30,6 +32,10 @@ export const adminSignUp = async (req, res) => {
         // hashing of the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Create verification token
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = Date.now() + 1000 * 60 * 60 * 24; //24 hours
+
         // Generate test keys only
         const testKeys = generateApiKeys('test');
 
@@ -43,7 +49,9 @@ export const adminSignUp = async (req, res) => {
             apiKeys: {
                 test: testKeys,
                 live: { publicKey: null, secretKey: null  }
-            }
+            },
+            verificationToken,
+            verificationExpires
         });
 
         await newAdmin.save();
@@ -55,9 +63,13 @@ export const adminSignUp = async (req, res) => {
             history: []
         });
 
+        // Send verification email
+        const verificationUrl = `http://localhost:3005/api/admin/verify-email?token=${verificationToken}`;
+        await sendVerificationEmail(email, firstName, verificationUrl)
+
         res.status(201).json({ 
             success: true, 
-            message: 'User registered succesfully' ,
+            message: 'Signup successful! Please check your email to verify your account before loggin in' ,
             adminId: newAdmin._id,
             firstName,
             lastName

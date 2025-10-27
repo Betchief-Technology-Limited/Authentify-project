@@ -13,6 +13,9 @@ const adminSchema = new mongoose.Schema({
     organization: { type: String, required: true },
     password: { type: String, required: true },
     terms: { type: Boolean, required: true },
+    emailVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: null },
+    verificationExpires: { type: Date, default: null },
     apiKeys: {
         test: apiKeysSchema,
         live: apiKeysSchema,
