@@ -7,7 +7,7 @@ export const verifyEmail = async (req, res) => {
             if (mode === "json") {
                 return res.status(400).json({ success: false, message: "Missing token" });
             }
-            return res.redirect("http://localhost:5173/verify-failed?reason=missing_token");
+            return res.redirect("http://localhost:3000/user-verification?verified=false&reason=missing_token");
         }
 
         const admin = await Admin.findOne({
@@ -21,7 +21,7 @@ export const verifyEmail = async (req, res) => {
                     .status(400)
                     .json({ success: false, message: "Invalid or expired verification link." });
             }
-            return res.redirect("http://localhost:5173/verify-failed?reason=invalid_or_expired");
+            return res.redirect("http://localhost:3000/user-verification?verified=false&reason=invalid_or_expired");
         }
 
         admin.emailVerified = true;
@@ -37,12 +37,12 @@ export const verifyEmail = async (req, res) => {
         }
 
         // Default behavior (browser redirect)
-        return res.redirect("http://localhost:5173/verified-success");
+        return res.redirect("http://localhost:3000/user-verification?verified=true");
     } catch (error) {
         console.error("❌ Email verification error:", error);
         if (req.query.mode === "json") {
             return res.status(500).json({ success: false, message: "Server error" });
         }
-        return res.redirect("http://localhost:5173/verify-failed?reason=server_error");
+        return res.redirect("http://localhost:3000/user-verification?verified=false&reason=server_error");
     }
 };
