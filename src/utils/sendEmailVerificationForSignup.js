@@ -5,8 +5,7 @@ const {
     SMTP_PORT,
     SMTP_USER,
     SMTP_PASS,
-    EMAIL_FROM,
-    SMTP_SECURE
+    EMAIL_FROM
 } = process.env
 
 // const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
@@ -16,10 +15,14 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
         const transporter = nodemailer.createTransport({
             host: SMTP_HOST,
             port: Number(SMTP_PORT || 587),
-            secure: String(SMTP_SECURE) === 'true',
+            secure:false,
+            requireTLS: true,
             auth: {
                 user: SMTP_USER,
                 pass: SMTP_PASS
+            },
+            tsl: {
+                rejectUnauthorized: false //this allows render's internal certs
             }
         });
 
