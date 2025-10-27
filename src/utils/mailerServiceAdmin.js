@@ -1,23 +1,26 @@
 import nodemailer from 'nodemailer';
-import getSmtpPassword from './sesSmtpPassword.js';
+
 
 const {
     SMTP_HOST,
     SMTP_PORT,
     SMTP_USER,
+    SMTP_PASS,
     EMAIL_FROM,
     SMTP_SECURE,
-    SMTP_FROM_NAME,
-    AWS_SECRET_KEY
+    SMTP_FROM_NAME
 } = process.env
 
-const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
+// const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
 
 const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT || 587),
     secure: String(SMTP_SECURE) === 'true',
-    auth: { user: SMTP_USER, pass: smtpPass }
+    auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+    }
 });
 
 export async function sendMail({ to, subject, html, text }) {

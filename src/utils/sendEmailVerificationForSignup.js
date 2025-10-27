@@ -1,16 +1,15 @@
 import nodemailer from 'nodemailer';
-import getSmtpPassword from './sesSmtpPassword.js';
 
 const {
     SMTP_HOST,
     SMTP_PORT,
     SMTP_USER,
+    SMTP_PASS,
     EMAIL_FROM,
-    SMTP_SECURE,
-    AWS_SECRET_KEY
+    SMTP_SECURE
 } = process.env
 
-const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
+// const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
 
 export const sendVerificationEmail = async (email, name, verificationUrl) => {
     try {
@@ -20,7 +19,7 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
             secure: String(SMTP_SECURE) === 'true',
             auth: {
                 user: SMTP_USER,
-                pass: smtpPass
+                pass: SMTP_PASS
             }
         });
 
