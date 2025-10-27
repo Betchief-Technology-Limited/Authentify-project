@@ -41,7 +41,7 @@ export const paymentVerification = async (req, res) => {
         const result = await verifyFlutterwavePayment(tx_ref);
 
         res.json({
-            sucess: result.success,
+            success: result.success,
             message: result.message,
             newBalance: result.newBalance || 0,
             transaction: result.transaction || null

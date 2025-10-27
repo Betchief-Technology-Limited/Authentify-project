@@ -10,7 +10,7 @@ const paymentRouter = express.Router();
 
 // verify payment
 paymentRouter.post('/init', authMiddleware, paymentInit)
-paymentRouter.post('/verify/:tx_ref', authMiddleware, paymentVerification);
+paymentRouter.get('/verify/:tx_ref', authMiddleware, paymentVerification);
 
 // Flutterwave webhook
 paymentRouter.post('/webhook', flutterwaveWebhook)

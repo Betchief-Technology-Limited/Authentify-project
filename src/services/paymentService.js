@@ -62,13 +62,18 @@ export const verifyFlutterwavePayment = async (tx_ref) => {
     if (!transaction) throw new Error('Transaction not found');
 
     // Verify payment from Flutterwave
-    const resp = await axios.get(
-        `${process.env.FLW_BASE_URL}/transactions/verify_by_reference?tx_ref=${tx_ref}`,
-        {
-            headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` }
-
-        }
-    );
+    console.log("🔍 Verifying Flutterwave payment:", tx_ref);
+    let resp;
+    try {
+        resp = await axios.get(
+            `${process.env.FLW_BASE_URL}/transactions/verify_by_reference?tx_ref=${tx_ref}`,
+            { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
+        );
+    } catch (err) {
+        console.error("❌ Flutterwave verify failed:", err.response?.data || err.message);
+        throw new Error("Flutterwave verification request failed");
+    }
+    console.log("🌍 URL:", `${process.env.FLW_BASE_URL}/transactions/verify_by_reference?tx_ref=${tx_ref}`);
 
     const flwData = resp.data.data;
     if (!flwData) throw new Error("Invalid Flutterwave response");

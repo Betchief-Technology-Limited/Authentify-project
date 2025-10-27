@@ -48,7 +48,7 @@ export const adminSignUp = async (req, res) => {
             terms,
             apiKeys: {
                 test: testKeys,
-                live: { publicKey: null, secretKey: null  }
+                live: { publicKey: null, secretKey: null }
             },
             verificationToken,
             verificationExpires
@@ -65,11 +65,16 @@ export const adminSignUp = async (req, res) => {
 
         // Send verification email
         const verificationUrl = `http://localhost:3005/api/admin/verify-email?token=${verificationToken}`;
-        await sendVerificationEmail(email, firstName, verificationUrl)
+        await sendVerificationEmail(email, firstName, verificationUrl);
 
-        res.status(201).json({ 
-            success: true, 
-            message: 'Signup successful! Please check your email to verify your account before loggin in' ,
+        // ✅ Send email (non-blocking — signup response is sent immediately)
+        sendVerificationEmail(email, firstName, verificationUrl).catch((err) => {
+            console.error("❌ Email send error:", err.message);
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Signup successful! Please check your email to verify your account before loggin in',
             adminId: newAdmin._id,
             firstName,
             lastName
