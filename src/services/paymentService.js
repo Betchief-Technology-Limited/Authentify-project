@@ -167,6 +167,14 @@ export const handleFlutterwaveWebhook = async (req, res) => {
             await wallet.save();
         }
 
+        // ✅ Generate LIVE keys if not yet created
+        const admin = await Admin.findById(transaction.admin);
+        if (!admin.apiKeys.live.publicKey || !admin.apiKeys.live.secretKey) {
+            const liveKeys = generateApiKeys("live");
+            admin.apiKeys.live = liveKeys;
+            await admin.save();
+        }
+
         return res.status(200).json({ success: true, message: "Webhook processed" });
 
     } catch (err) {

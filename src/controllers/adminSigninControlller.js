@@ -22,7 +22,7 @@ export const adminLogIn = async (req, res) => {
         if (!admin) return res.status(400).json({ message: 'Invalid email or password' });
 
         // Check if the email has been verified by the client
-        if(!admin.emailVerified) {
+        if (!admin.emailVerified) {
             return res.status(403).json({
                 message: "Please verify your email before logging in"
             });
@@ -35,6 +35,10 @@ export const adminLogIn = async (req, res) => {
         // ✅ Fetch live wallet from the database
         const wallet = await Wallet.findOne({ admin: admin._id });
         const currentBalance = wallet ? wallet.balance : 0;
+
+        // Update admin's walletBalance field
+        admin.walletBalance = currentBalance
+        await admin.save();
 
 
         // Generate JWT
@@ -62,7 +66,18 @@ export const adminLogIn = async (req, res) => {
         //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
         //     maxAge: 60 * 60 * 1000, // 1 hour
         // });
+        // 🟢 Log what will be returned
+        console.log({
+            id: admin._id,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            email: admin.email,
+            walletBalance: currentBalance,
+            testApiKeys: admin.apiKeys.test,
+            liveApiKeys: admin.apiKeys.live
+        });
 
+        
         res.status(200).json({
             success: true,
             message: "Login successful",
