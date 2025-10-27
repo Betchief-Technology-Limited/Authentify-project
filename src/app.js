@@ -26,31 +26,29 @@ app.use(morgan('dev'));
 
 // // ✅ Allowed origins
 const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "https://your-production-frontend.com",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "https://your-production-frontend.com",
+  "https://authentify.vercel.app", // <-- add this once deployed
 ];
 
-// ✅ Configure CORS
 const corsOptions = {
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true); 
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        } else {
-            console.warn(`🚫 CORS blocked: ${origin}`);
-            return callback(null, false);
-        }
-    },
-    credentials: true,
-    optionsSuccessStatus: 200,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 Blocked by CORS: ${origin}`);
+      // Return an actual error, not (null, false)
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
 };
 
-// ✅ Apply globally before routes
 app.use(cors(corsOptions));
-
-// ✅ (Optional) Handle preflight safely for Express 5
+// ✅ Use regex for preflight requests (Express 5 fix)
 app.options(/.*/, cors(corsOptions));
 
 // app.use(cors({
