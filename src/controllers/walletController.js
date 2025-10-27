@@ -10,6 +10,9 @@ export const getWallet = async (req, res) => {
             balance: wallet.balance,
             history: wallet.history
         });
+
+        console.log("Admin ID from token:", req.admin?._id);
+
     } catch (err) {
         res.status(500).json({ message: "Failed to fetch wallet", error: err.message });
     }
@@ -18,7 +21,7 @@ export const getWallet = async (req, res) => {
 // POST recharge wallet
 export const rechargeWallet = async (req, res) => {
     try {
-        const amount  = Number(req.body.amount);
+        const amount = Number(req.body.amount);
         if (isNaN(amount) || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
 
         let wallet = await Wallet.findOne({ admin: req.admin._id });
@@ -34,6 +37,9 @@ export const rechargeWallet = async (req, res) => {
             balance: wallet.balance,
             history: wallet.history
         });
+
+        console.log("Admin ID from token:", req.admin?._id);
+
     } catch (err) {
         res.status(500).json({ message: "Failed to recharge wallet", error: err.message });
     }

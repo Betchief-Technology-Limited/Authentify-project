@@ -68,6 +68,7 @@ export const adminSignUp = async (req, res) => {
         await sendVerificationEmail(email, firstName, verificationUrl);
 
         // ✅ Send email (non-blocking — signup response is sent immediately)
+
         sendVerificationEmail(email, firstName, verificationUrl).catch((err) => {
             console.error("❌ Email send error:", err.message);
         });
