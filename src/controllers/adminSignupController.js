@@ -72,7 +72,7 @@ export const adminSignUp = async (req, res) => {
             console.error("❌ Email send error:", err.message);
         });
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: 'Signup successful! Please check your email to verify your account before loggin in',
             adminId: newAdmin._id,
