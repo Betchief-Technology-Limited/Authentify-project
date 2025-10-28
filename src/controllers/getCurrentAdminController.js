@@ -5,7 +5,7 @@ import Admin from "../models/Admin.js";
 export const getCurrentAdmin = async (req, res) => {
     try {
         // req.admin is attached from your auth middleware
-        const admin = await Admin.findById(req.admin._id).select("apiKeys firstName lastName email _id walletBalance");
+        const admin = await Admin.findById(req.admin._id).select("apiKeys firstName lastName email _id walletBalance emailVerified");
         console.log(admin)
         
         if (!admin) {
