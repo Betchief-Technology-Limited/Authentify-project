@@ -140,6 +140,20 @@ export const getAllOrganizations = async (req, res) => {
                 error: error.message
             });
     }
+
+    const organizations = await Organization.find(query).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: organizations.length,
+      data: organizations,
+    });
+  } catch (error) {
+    console.error("Fetch Organizations Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
 };
 
 
