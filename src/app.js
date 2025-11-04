@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import { allowedOrigins } from './config/corsConfig.js';
+import errorHandler from './config/errorHandler.js';
 
 import { adminRouter } from './routes/adminRoutes.js';
 import { otpSmsRouter } from './routes/otpRoutes.js';
@@ -23,14 +25,6 @@ const app = express();
 
 app.use(morgan('dev'));
 
-
-// // ✅ Allowed origins
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:3000",
-    "https://your-production-frontend.com",
-];
 
 // ✅ Configure CORS
 const corsOptions = {
@@ -87,13 +81,6 @@ app.use((req, res) =>
 );
 
 // Centralized error handler
-app.use((err, req, res, next) => {
-    console.error("Unhandled error:", err);
-    const status = err.status || 500;
-    res.status(status).json({
-        success: false,
-        message: err.message || "Internal server error",
-    });
-});
+app.use(errorHandler);
 
 export default app;

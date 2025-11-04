@@ -3,6 +3,7 @@ import Otp from "../models/otp.js";
 import Transaction from "../models/transaction.js";
 import { checkSendAbility, sendVerificationMessage } from "./telegramService.js";
 import { checkBalance, deduct } from "./walletService.js";
+import { getIO } from "../config/socket.js";
 
 export const createAndSendOtpTelegram = async ({ admin, to, otpLength }) => {
   // 1️⃣ Determine Telegram OTP cost
@@ -100,6 +101,16 @@ export const createAndSendOtpTelegram = async ({ admin, to, otpLength }) => {
   // ✅ Mark transaction as success
   transaction.status = 'successful';
   await transaction.save();
+
+  //📊 Emit live analytics
+  getIO().emit("otp_activity", {
+    service: "telegram",
+    admin: admin._id,
+    amount: telegramCost,
+    timestamp: new Date(),
+    message: "Telegram OTP sent successfully"
+  })
+
 
   return { otpDoc, telegramResp: sendResp, transaction };
 };

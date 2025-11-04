@@ -3,15 +3,17 @@ import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 const ses = new SESClient({
     region: "us-east-1",
     credentials: {
-        accessKeyId: process.env.SMTP_USER,
-        secretAccessKey: process.env.AWS_SECRET_KEY,
+        accessKeyId: process.env.SMTP_USER,        // Your SES SMTP username (AKIA…)
+        secretAccessKey: process.env.AWS_SECRET_KEY, // Your SES IAM secret key
     },
 });
 
 export const sendVerificationEmail = async (email, name, verificationUrl) => {
     try {
+        const fromAddress = `${process.env.SMTP_FROM_NAME} <${process.env.EMAIL_FROM}>`;
+
         const params = {
-            Source: process.env.EMAIL_FROM,
+            Source: fromAddress, // ✅ e.g. "Authentify <no-reply@authentify.primex360.com>"
             Destination: { ToAddresses: [email] },
             Message: {
                 Subject: { Data: "Verify your email address" },
@@ -43,6 +45,7 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
         console.error("❌ Failed to send verification email:", error.message);
     }
 };
+
 
 
 

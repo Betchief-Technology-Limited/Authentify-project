@@ -133,9 +133,8 @@ const EMAIL_COST = parseFloat(process.env.EMAIL_API_COST || '1');
 
 // AWS SES SMTP credentials
 const AWS_SECRET_KEY = process.env.AWS_SECRET_KEY;
-const SMTP_PASS = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
 const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_USER = process.env.SMTP_USER;
+const SMTP_USER = process.env.SMTP_USER_EMAIL_SERVICE;
 const SMTP_PORT = process.env.SMTP_PORT;
 const SMTP_SECURE = process.env.SMTP_SECURE;
 const SMTP_REJECT_UNAUTHORIZED = process.env.SMTP_REJECT_UNAUTHORIZED;
@@ -200,7 +199,7 @@ const sendViaSmtp = async ({ from, to, subject, body }) => {
     } catch (err) {
         console.error('❌ SES send error:', err);
         return { ok: false, error: err.message || String(err) };
-    }   
+    }
 };
 
 // ------------------------------------------------------------------
@@ -275,6 +274,15 @@ export const sendEmail = async ({ admin, from, to, subject, body, templateId, pr
             description: `Email send to ${to}`,
         });
         await wallet.save();
+
+        // 📊 Emit analytics
+        getIO().emit("email_activity", {
+            service: "email",
+            admin: admin._id,
+            amount: EMAIL_COST,
+            timestamp: new Date(),
+            message: `Email sent successfully to ${to}`,
+        });
 
         emailDoc.status = 'sent';
         emailDoc.providerResponse = sendResp;

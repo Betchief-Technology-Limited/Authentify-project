@@ -3,7 +3,12 @@ import Wallet from "../models/wallet.js";
 
 // predefined cost per subservice
 const SERVICE_COSTS = {
-    otp: { sms: 10, whatsapp: 2, telegram: 50 },
+    otp: {
+        sms: 10,
+        whatsapp: 2,
+        telegram: 50
+    },
+
     kyc: {
         premium_nin: 10,
         virtual_nin: 12,
@@ -12,7 +17,11 @@ const SERVICE_COSTS = {
         voter_card: 4,
         drivers_licence: 60
     },
-    email: { basic: 5, bulk: 15 }
+    email: { 
+        basic_email: 5, 
+        bulk_email: 15,
+        marketing_email: 10
+    }
 }
 
 // 📌 Subscribe client to a subservice

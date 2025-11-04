@@ -25,10 +25,19 @@ organizationRouter.post(
 );
 
 // Get organization by clientId
-organizationRouter.get('/:clientId',getOrganizationByClientId);
+organizationRouter.get('/:clientId', getOrganizationByClientId);
 
-// Update organization info
-organizationRouter.put('/:id', upload.any(), updateOrganization);
+//  Update organization info (optional re-uploads)
+organizationRouter.put(
+    "/:id",
+    upload.fields([
+        { name: "certificateOfIncorporation", maxCount: 1 },
+        { name: "particularsOfDirectors", maxCount: 1 },
+        { name: "particularsOfShareholders", maxCount: 1 },
+        { name: "operatingLicence", maxCount: 1 },
+    ]),
+    updateOrganization
+);
 
 // Delete organization
 organizationRouter.delete('/:id', deleteOrganization);

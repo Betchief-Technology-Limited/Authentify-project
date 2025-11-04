@@ -21,7 +21,7 @@ const ensureWallet = async (adminId) => {
 export const checkBalance = async (adminId, cost) => {
     const wallet = await ensureWallet(adminId);
 
-    if (typeof cost !=='number' || isNaN(cost)) {
+    if (typeof cost !== 'number' || isNaN(cost)) {
         throw new Error('Invalid cost parameter passed to checkBalance()');
     }
     return wallet.balance >= cost
@@ -31,7 +31,7 @@ export const checkBalance = async (adminId, cost) => {
 export const deduct = async (adminId, cost, description = 'Service charge') => {
     const wallet = await ensureWallet(adminId)
 
-    if (typeof cost !=='number' || isNaN(cost)) {
+    if (typeof cost !== 'number' || isNaN(cost)) {
         throw new Error('Invalid cost parameter passed to deduct()');
     }
 
@@ -40,6 +40,15 @@ export const deduct = async (adminId, cost, description = 'Service charge') => {
     wallet.balance -= cost;
     wallet.history.push({ type: 'debit', amount: cost, description });
     await wallet.save();
+
+    // 📊 Emit wallet update
+    getIO().emit("wallet_update", {
+        admin: adminId,
+        balance: wallet.balance,
+        change: -cost,
+        description,
+        timestamp: new Date(),
+    });
 
     return wallet;
 }
