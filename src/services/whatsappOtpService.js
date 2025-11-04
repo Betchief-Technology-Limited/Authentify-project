@@ -2,6 +2,8 @@ import { generateSecret, bufferToBase32, totp } from "authentifyotp";
 import Otp from "../models/otp.js";
 import { sendWhatsappMessage } from "./whatsappProviderService.js";
 import { checkBalance, deduct } from "./walletService.js";
+import { getIO } from "../config/socket.js";
+
 
 export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength}) => {
     // 1. Check wallet balance
@@ -39,6 +41,14 @@ export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength}) => {
     //( 5. Deduct from wallet per API call
     if(whatsappResp.success) {
         await deduct(admin._id, whatsappCost, 'WhatsApp OTP sent');
+
+        getIO().emit("otp_activity", {
+            service: "whatsapp",
+            admin: admin._id,
+            amount: whatsappCost,
+            timestamp: new Date(),
+            message: "WhatApp OTP sent successfully!!!"
+        });
     }
 
     return { otpDoc, whatsappResp }

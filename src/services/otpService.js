@@ -2,6 +2,7 @@ import { generateSecret, bufferToBase32, totp } from "authentifyotp";
 import Otp from "../models/otp.js";
 import { sendSmsViaMobishastra } from "./mobishastraService.js";
 import { checkBalance, deduct } from "./walletService.js";
+import { getIO } from "../config/socket.js";
 
 // Create and send OTP via Mobishastra
 export const createAndSendOtpSms = async ({ admin, to, otpLength }) => {
@@ -46,6 +47,15 @@ export const createAndSendOtpSms = async ({ admin, to, otpLength }) => {
     // 5) Deduct wallet per OTP sent
     if(smsResp.success){
         await deduct(admin._id, smsCost, 'SMS OTP sent');
+
+        // 📊 Emit analytics
+        getIO().emit("otp_activity", {
+            service: "sms",
+            admin: admin._id,
+            amount: smsCost,
+            timeStamp: new Date(),
+            message: "SMS OTP successfully sent"
+        })
     }
 
     return { otpDoc, smsResp }

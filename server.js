@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
+import http from 'http';
 import app from "./src/app.js";
 import { userDB, orgDB, serviceDB } from "./src/config/db.js";
+import { initSocket } from "./src/config/socket.js";
 
 dotenv.config();
 
@@ -20,7 +22,11 @@ async function start() {
 
     app.locals = { userDB, orgDB, serviceDB };
 
-    app.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
+    // ✅ Attach socket.io to HTTP server
+    const server = http.createServer(app);
+    initSocket(server);
+
+    server.listen(PORT, () => console.log(`🚀 Server listening on port ${PORT}`));
 }
 
 start();

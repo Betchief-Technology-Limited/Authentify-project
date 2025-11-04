@@ -65,12 +65,21 @@ export const processKycVerification = async (admin, userIdentifier, type) => {
 
     await wallet.save();
 
+    // 📊 Emit live analytics
+    getIO().emit("kyc_activity", {
+        service: type,
+        admin: admin._id,
+        amount: cost,
+        timestamp: new Date(),
+        message: `KYC verification (${type}) completed`,
+    });
+
     return { kycRecord, transaction }
 
 };
 
 export const getKycStatus = async (tx_ref) => {
     const record = await Kyc.findOne({ tx_ref });
-    if(!record) throw new Error('KYC record not found');
+    if (!record) throw new Error('KYC record not found');
     return record;
 }

@@ -37,6 +37,15 @@ serviceAdminSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// ✅ Enforce single admin (hard limit)
+serviceAdminSchema.pre("save", async function (next) {
+    const existing = await ServiceAdmin.findOne();
+    if (existing && existing._id.toString() !== this._id.toString()) {
+        return next(new Error("A Service Admin already exists. Only one admin is allowed."));
+    }
+    next();
+});
+
 const ServiceAdmin = serviceDB.model("ServiceAdmin", serviceAdminSchema);
 
 export default ServiceAdmin;

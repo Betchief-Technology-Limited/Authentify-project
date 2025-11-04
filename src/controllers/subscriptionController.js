@@ -3,12 +3,12 @@ import Wallet from "../models/wallet.js";
 
 // predefined cost per subservice
 const SERVICE_COSTS = {
-    otp: { 
-        sms: 10, 
-        whatsapp: 2, 
-        telegram: 50 
+    otp: {
+        sms: 10,
+        whatsapp: 2,
+        telegram: 50
     },
-    
+
     kyc: {
         premium_nin: 10,
         virtual_nin: 12,

@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import ServiceAdmin from '../models/serviceAdmin.js';
 import Organization from '../models/organization.js';
-import { sendEmail } from '../services/emailService.js';
 import { verifiedTemplate, rejectedTemplate } from '../utils/serviceAdminEmailTemplate.js';
 import { sendMail } from '../utils/mailerServiceAdmin.js';
 
@@ -29,7 +28,11 @@ export const registerServiceAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error('Resgister Service Admin Error:', error);
-        return res.status(500).json({ success: false, message: 'Server error', error: error.message })
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        })
     }
 };
 
@@ -41,27 +44,18 @@ export const loginServiceAdmin = async (req, res) => {
         const { email, password } = req.body;
 
         const admin = await ServiceAdmin.findOne({ email });
-        if (!admin) {
+        if (!admin || !(await admin.matchPassword(password))) {
             return res.status(400).json({ success: false, message: 'Invalid credentials' })
         }
 
-        const isMatch = await admin.matchPassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' })
-        }
+        // const isMatch = await admin.matchPassword(password);
+        // if (!isMatch) {
+        //     return res.status(401).json({ success: false, message: 'Invalid credentials' })
+        // }
 
         const token = jwt.sign({ id: admin._id }, JWT_SECRET, { expiresIn: '7d' });
 
-        // // ✅ Detect if frontend is local
-        // const isLocalFrontend = req.headers.origin?.includes("localhost");
 
-        // // ✅ Set JWT as HttpOnly cookie
-        // res.cookie("serviceAdminToken", token, {
-        //     httpOnly: true,
-        //     secure: !isLocalFrontend, // false for localhost, true for live HTTPS
-        //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
-        //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        // });
         res.cookie('serviceAdminToken', token, {
             httpOnly: true, //cant be access with JS
             secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
@@ -77,7 +71,11 @@ export const loginServiceAdmin = async (req, res) => {
         });
     } catch (error) {
         console.error('Login Service Admin Error:', error);
-        return res.status(500).json({ success: false, message: 'Server error', error: error.message })
+        return res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        })
     }
 }
 
@@ -85,14 +83,7 @@ export const loginServiceAdmin = async (req, res) => {
 // LOGOUT
 // ========================
 export const logoutServiceAdmin = (req, res) => {
-    // const isLocalFrontend = req.headers.origin?.includes("localhost");
-
-    // res.clearCookie("serviceAdminToken", {
-    //     httpOnly: true,
-    //     secure: !isLocalFrontend, // false for localhost, true for production
-    //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
-    // });
-    res.cookie('serviceAdminToken', token, {
+    res.clearCookie('serviceAdminToken', {
         httpOnly: true, //cant be access with JS
         secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -108,13 +99,46 @@ export const logoutServiceAdmin = (req, res) => {
 // GET ALL SUBMITTED ORGANIZATIONS
 // ========================
 
-export const getAllOrganizations = async (req, res) => {
-  try {
-    const { status } = req.query;
+// export const getAllOrganizations = async (req, res) => {
+//     try {
+//         const organizations = await Organization.find().sort({ createdAt: -1 });
 
-    let query = {};
-    if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
-      query.verificationStatus = status.toLowerCase();
+//         return res.status(200).json({
+//             success: true,
+//             count: organizations.length,
+//             data: organizations
+//         });
+//     } catch (error) {
+//         console.error('Fetch Organizations Error:', error);
+//         return res.status(500).json({ success: false, message: 'Server error' })
+//     }
+// };
+
+export const getAllOrganizations = async (req, res) => {
+    try {
+        const { status } = req.query;
+
+        let query = {};
+        if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
+            query.verificationStatus = status.toLowerCase();
+        }
+
+        const organizations = await Organization.find(query).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: organizations.length,
+            data: organizations,
+        });
+    } catch (error) {
+        console.error("Fetch Organizations Error:", error);
+        return res
+            .status(500)
+            .json({
+                success: false,
+                message: "Server error",
+                error: error.message
+            });
     }
 
     const organizations = await Organization.find(query).sort({ createdAt: -1 });
@@ -151,56 +175,73 @@ export const updateOrganizationStatus = async (req, res) => {
             })
         }
 
-        const organization = await Organization.findByIdAndUpdate(
-            id,
-            {
-                verificationStatus: status,
-                verificationFeedback: feedback || "",
-                verifiedAt: status === "verified" ? new Date() : null
-            },
-            { new: true }
-        );
+        // const organization = await Organization.findByIdAndUpdate(
+        //     id,
+        //     {
+        //         verificationStatus: status,
+        //         verificationFeedback: feedback || "",
+        //         verifiedAt: status === "verified" ? new Date() : null
+        //     },
+        //     { new: true }
+        // );
 
-        if (!organization) {
-            return res.status(404).json({ success: false, message: "Organization not found" });
-        }
+        // if (!organization) {
+        //     return res.status(404).json({ success: false, message: "Organization not found" });
+        // }
+        const organization = await Organization.findById(id);
+        if (!organization)
+            return res
+                .status(404)
+                .json({ success: false, message: "Organization not found" });
+
+        organization.verificationStatus = status;
+        organization.verificationFeedback = feedback || "";
+        organization.verifiedAt = status === "verified" ? new Date() : null;
 
         // -------EMAIL NOTIFICATION-------
-        const recipient = organization?.contactPerson.email || organization?.contactEmail || null //this contact.Email will be added later
+        const recipient =
+            organization?.contactPerson?.email ||
+            organization?.dataProtectionOfficer?.contactEmail ||
+            null;
 
         if (recipient) {
             try {
-                const tpl = status === "verified" ? verifiedTemplate(organization) : rejectedTemplate(organization, feedback);
+                const tpl =
+                    status === "verified"
+                        ? verifiedTemplate(organization)
+                        : rejectedTemplate(organization, feedback);
 
                 await sendMail({
                     to: recipient,
                     subject: tpl.subject,
                     html: tpl.html,
-                    text: tpl.text
+                    text: tpl.text,
                 });
 
-                // ✅ Mark email as sent successfully
                 organization.emailNotification.sent = true;
                 organization.emailNotification.sentAt = new Date();
             } catch (mailErr) {
-                // Do not fail the API if email fails—log and continue
-                console.error("Email notify failed:", mailErr?.message || mailErr);
+                console.error("Email notify failed:", mailErr.message);
             }
-        } else {
-            console.warn("No recipeint email found on organization. Skipped email notify")
         }
 
+        await organization.save();
 
         return res.status(200).json({
             success: true,
-            message: `Organization ${status} successfully`,
-            data: organization
-        })
+            message: `Organization ${status} successfully.`,
+            data: organization,
+        });
     } catch (error) {
-        console.error('Update Status Error:', error);
-        return res.status(500).json({ success: false, message: 'Server error' })
+        console.error("Update Status Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+        });
     }
-}
+};
+
 
 // ========================
 // MANUAL RESEND EMAIL NOTIFICATION
@@ -230,7 +271,7 @@ export const resendVerificationEmail = async (req, res) => {
         const tpl =
             status === "verified"
                 ? verifiedTemplate(organization)
-                : rejectedTemplate(organization, organization.verificationFeedback);
+                : rejectedTemplate(organization, organization.verificationFeedback || "");
 
         await sendMail({
             to: recipient,
