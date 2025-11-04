@@ -9,6 +9,10 @@ export const createOrganization = async (req, res) => {
   try {
     const { body, files } = req;
 
+    console.log("🧾 Incoming organization form data:");
+    console.log("Body fields =>", body);
+    console.log("Files received =>", Object.keys(files || {}));
+
     // ✅ Check if client already has an organization
     const existingOrg = await Organization.findOne({ clientId: body.clientId });
     if (existingOrg) {
@@ -41,6 +45,7 @@ export const createOrganization = async (req, res) => {
 
     for (const key in files) {
       const file = files[key][0];
+       console.log(`File ${key}:`, files[key][0].originalname);
 
       if (!file.buffer) {
         return res.status(400).json({
@@ -283,10 +288,10 @@ export const getOrganizationVerificationStatus = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Organization form not yet submitted",
-        data: { 
-          status: "not_submitted", 
-          feedback: "", 
-          verifiedAt: null 
+        data: {
+          status: "not_submitted",
+          feedback: "",
+          verifiedAt: null
         },
       });
     }
