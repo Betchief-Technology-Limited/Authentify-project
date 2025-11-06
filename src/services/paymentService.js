@@ -2,6 +2,7 @@ import Transaction from "../models/transaction.js";
 import Admin from "../models/Admin.js";
 import Wallet from "../models/wallet.js";
 import axios from "axios";
+import crypto from 'crypto'
 import { generateApiKeys } from "../utils/apiKeyGenerator.js";
 
 //First step: Initiate payment and save transaction
@@ -180,5 +181,148 @@ export const handleFlutterwaveWebhook = async (req, res) => {
     } catch (err) {
         console.error("Webhook error:", err.message);
         return res.status(500).json({ success: false, message: "Webhook handling failed" });
+    }
+}
+
+
+/* ============================================
+   🔹 PAYSTACK INTEGRATION (New Section)
+   ============================================ */
+
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+const api = axios.create({
+    baseURL: "https:/api.paystack.co",
+    headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+        "Content-Type": "application/json"
+    }
+});
+
+/**
+ * STEP 1: Initialize Paystack Transaction
+ * This returns a transaction reference and authorization URL
+ * Your frontend can embed Paystack’s inline form for card entry.
+ */
+
+export async function initTransaction({ email, amount, reference, metadata = {} }) {
+    const { data } = await api.post("/transaction/initialize", {
+        email,
+        amount: Math.round(Number(amount) * 100), //Convert this to kobo
+        reference,
+        metadata
+    });
+    return data; // { status, message, data: { reference, authorization_url, ... } }
+}
+
+/**
+ * STEP 2: Verify Paystack Transaction
+ * Called after payment or via webhook
+ */
+
+export async function verifyTransaction(reference) {
+    const { data } = await api.get(`/transaction/verify/${reference}`);
+    return data; // { status, data: { status: 'success', amount, currency, ... } }
+}
+
+// Fund Wallet After Paystack Verification
+export async function finalizePaystackFunding(adminId, reference) {
+    const transaction = await Transaction.findOne({ tx_ref: reference });
+
+    if (!transaction) throw new Error("Transaction not found");
+
+    const verification = await verifyTransaction(reference);
+    const payData = verification.data;
+
+    if (!payData || payData.status !== "success") {
+        transaction.status = 'failed';
+        await transaction.save();
+        return res.status(400).json({ success: false, message: "Paystack payment not successful" });
+    }
+
+    transaction.status = "successful";
+    transaction.rawPayLoad = payData;
+    await transaction.save();
+
+    let wallet = await Wallet.findOne({ admin: adminId });
+    if (!wallet)
+        wallet = await Wallet.create({
+            admin: adminId,
+            balance: 0,
+            history: []
+        });
+
+    wallet.balance += transaction.amount;
+    wallet.history.push({
+        type: "credit",
+        amount: transaction.amount,
+        description: "Wallet funding via Paystack"
+    });
+    await wallet.save();
+
+    const admin = await Admin.findById(adminId);
+    if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
+        const liveKeys = generateApiKeys("live");
+        admin.apiKeys.live = liveKeys;
+        await admin.save();
+    }
+    return res.status(200).json({
+        success: true,
+        message: "Wallet funded via Paystack",
+        newBalance: wallet.balance
+    })
+}
+
+/**
+ * STEP 3: Handle Paystack Webhook (Server → Server Notification)
+ * --------------------------------------------------------------
+ * Paystack sends a POST request to your webhook URL (e.g. /api/payments/paystack/webhook)
+ * whenever a transaction event occurs.
+ * 
+ * This handler:
+ * - Verifies the HMAC SHA512 signature using PAYSTACK_SECRET_KEY
+ * - Validates event type and reference
+ * - Calls finalizePaystackFunding() to credit wallet if successful
+ */
+
+export const handlePaystackWebhook = async (req, res) => {
+    try {
+        const secret = process.env.PAYSTACK_SECRET_KEY;
+        const hash = crypto
+            .createHmac("sha512", secret)
+            .update(JSON.stringify(req.body))
+            .digest("hex");
+
+        const signature = req.headers["x-paystack-signature"];
+
+        // Verify webhook authenticity
+        if (!signature || hash !== signature) {
+            console.warn("🚫 Invalid Paystack webhook signature");
+            return res.status(401).json({ success: false, message: "Unauthorized webhook" })
+        }
+
+        const event = req.body;
+        const { reference, status } = event.data;
+
+        // Only handle successful charges
+        if (event.event === "charge.success" && status === "success") {
+            console.log("✅ Paystack webhook: charge.success for ref:", reference);
+            // Paystack allows embedding metadata — adminId can be passed from frontend init
+            const adminId = event.data.metadata?.adminId;
+
+            if (!adminId) {
+                console.warn("⚠️ Missing adminId in Paystack metadata. Cannot auto-credit wallet.");
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing adminId in metadata"
+                });
+            }
+
+            await finalizePaystackFunding(adminId, reference);
+        }
+
+        res.status(200).json({ success: true, message: "Webhook processed successfully" })
+    } catch (err) {
+        console.error("💥 Paystack Webhook Error:", err.message);
+        res.status(500).json({ success: false, message: "Webhook processing failed" });
     }
 }
