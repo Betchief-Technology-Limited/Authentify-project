@@ -172,22 +172,34 @@ export const paystackWebhook = async (req, res) => {
 
 export const paystackTokenize = async (req, res) => {
     try {
-        const { cardNumber, expiryMonth, expiryYear, cvv } = req.body;
-        if (!cardNumber || !expiryMonth || !expiryYear || !cvv) {
+        const { cardNumber, expiryMonth, expiryYear, cvv, card } = req.body;
+
+        // Accept both direct or nested card object
+        const number = cardNumber || card?.number;
+        const month = expiryMonth || card?.expiry_month;
+        const year = expiryYear || card?.expiry_year;
+        const code = cvv || card?.cvv;
+
+        if (!number || !month || !year || !code) {
             return res.status(400).json({ success: false, message: "Missing card fields" });
         }
 
-        const { token } = await tokenizeCardWithPaystack({
-            number: String(cardNumber).replace(/\s+/g, ""),
-            expiry_month: String(expiryMonth).padStart(2, "0"),
+        const { token, customerEmail } = await tokenizeCardWithPaystack({
+            email: req.admin?.email || "caroline.mato1@gmail.com",
+            number: String(number).replace(/\s+/g, ""),
+            expiry_month: String(month).padStart(2, "0"),
             expiry_year:
-                String(expiryYear).length === 2
-                    ? `20${expiryYear}`
-                    : String(expiryYear),
-            cvv: String(cvv)
+                String(year).length === 2
+                    ? `20${year}`
+                    : String(year),
+            cvv: String(code)
         });
 
-        return res.status(200).json({ success: true, token })
+        return res.status(200).json({ 
+            success: true, 
+            token,
+            customerEmail
+        })
     } catch (err) {
         console.error("💥 Paystack Tokenize Error:", err.message);
         return res.status(500).json({ success: false, message: err.message })
@@ -204,7 +216,9 @@ export const paystackTokenize = async (req, res) => {
 export const paystackChargeToken = async (req, res) => {
     try {
         const adminId = req.admin?._id;
+        console.log(adminId)
         const email = req.admin?.email;
+        console.log(email)
         const { token, amount } = req.body;
 
         if (!adminId || !email) {
@@ -217,7 +231,7 @@ export const paystackChargeToken = async (req, res) => {
 
         const result = await chargePaystackTokenAndCreditWallet({
             adminId,
-            email,
+            email: req.body.customerEmail || req.admin.email,  // ✅ match tokenization email
             token,
             amount: Number(amount),
             metadata: { adminId: String(adminId), purpose: "wallet_topup_token" }

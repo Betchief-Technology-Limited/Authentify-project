@@ -362,7 +362,7 @@ export const handlePaystackWebhook = async (req, res) => {
 /**
  * Tokenize a card using Paystack
  * @param {{number:string, expiry_month:string, expiry_year:string, cvv:string}}
- * @returns {{token:string}}
+ * @returns {Promise<{token:string}>}
  */
 
 export async function tokenizeCardWithPaystack({
@@ -373,23 +373,30 @@ export async function tokenizeCardWithPaystack({
     cvv
 }) {
     const payload = {
-        ...(email ? { email } : {}),
+        email,
         card: { number, cvv, expiry_month, expiry_year }
     };
 
+    console.log("🔹 Sending to Paystack:", payload); //for debugging. We will remove all the console.log after testing
     const { data } = await api.post("/charge/tokenize", payload);
 
+    console.log("🔸 Paystack Raw Response:", data); // 👈 Add this line
     if (!data?.status) {
         throw new Error(data?.message || "Paystack tokenization failed")
     }
 
-    return { token: data.data.token };
+    // ✅ Fix: Use authorization_code instead of token
+    return { 
+        token: data.data.authorization_code,
+        customerEmail: data.data.customer?.email // ✅ capture Paystack’s actual email
+    };
 }
 
 /**
  * Charge via token (no redirect) + credit wallet + persist transaction
  * Creates a pending Transaction -> charges token -> credits wallet on success
  */
+
 
 export async function chargePaystackTokenAndCreditWallet({
     adminId,
@@ -398,14 +405,12 @@ export async function chargePaystackTokenAndCreditWallet({
     amount,
     metadata = {}
 }) {
-    // 1) Ensure Admin exists
     const admin = await Admin.findById(adminId);
     if (!admin) throw new Error("Admin not found");
 
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) throw new Error("Invalid amount")
+    if (!Number.isFinite(amt) || amt <= 0) throw new Error("Invalid amount");
 
-    // 2) Create local reference + DB record (pending)
     const reference = `fund_${adminId}_${Date.now()}`;
 
     await Transaction.create({
@@ -417,71 +422,174 @@ export async function chargePaystackTokenAndCreditWallet({
         description: "wallet funding via Paystack token"
     });
 
-    // 3) Charge using token
     const payload = {
-        token,
+        authorization_code: token,  // ✅ correct key
         email,
-        amount: Math.round(Number(amt) * 100), //kobo
+        amount: Math.round(amt * 100),
         reference,
         currency: "NGN",
         metadata: { ...metadata, adminId: String(adminId) }
     };
 
-    const { data } = await api.post("/charge/token", payload);
+    try {
+        const { data } = await api.post("/transaction/charge_authorization", payload);
+        console.log("🔸 Paystack Charge Response:", data);
 
-    // Handle Paystack response
-    if (!data?.status) {
-        // mark failed
+        if (!data?.status) {
+            await Transaction.updateOne({ tx_ref: reference }, { status: "failed", rawPayLoad: data });
+            return { success: false, message: data?.message || "Paystack charge failed", reference };
+        }
+
+        const charge = data.data;
+        if (!charge || charge.status !== "success") {
+            await Transaction.updateOne(
+                { tx_ref: reference },
+                { status: "failed", rawPayLoad: charge || data }
+            );
+            return {
+                success: false,
+                message: `Charge not successful (${charge?.status || "unknown"})`,
+                reference,
+                data: charge
+            };
+        }
+
+        // ✅ Mark success and credit wallet
+        await Transaction.updateOne({ tx_ref: reference }, { status: "successful", rawPayLoad: charge });
+
+        const creditedAmount = Number(charge.amount) / 100;
+        let wallet = await Wallet.findOne({ admin: adminId });
+        if (!wallet) wallet = await Wallet.create({ admin: adminId, balance: 0, history: [] });
+
+        wallet.balance += creditedAmount;
+        wallet.history.push({
+            type: "credit",
+            amount: creditedAmount,
+            description: "Wallet funding via Paystack (token)"
+        });
+        await wallet.save();
+
+        if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
+            const liveKeys = generateApiKeys("live");
+            admin.apiKeys.live = liveKeys;
+            await admin.save();
+        }
+
+        return {
+            success: true,
+            message: "Wallet funded via Paystack token",
+            newBalance: wallet.balance,
+            reference,
+            data: charge
+        };
+    } catch (err) {
+        console.error("💥 Paystack charge_authorization failed:", err.response?.data || err.message);
+
         await Transaction.updateOne(
             { tx_ref: reference },
-            { status: "failed", rawPayLoad: data }
+            { status: "failed", rawPayLoad: err.response?.data || err.message }
         );
-        return { success: false, message: data?.message || "Paystack charge failed", reference };
+
+        return {
+            success: false,
+            message: err.response?.data?.message || err.message || "Charge request failed",
+            reference
+        };
     }
-
-    // Inspect cahrge object
-    const charge = data.data;
-    if (!charge || charge.status !== "success") {
-        await Transaction.updateOne(
-            { tx_ref: reference },
-            { status: "failed", rawPayLoad: charge || data }
-        );
-        return { success: false, message: "Charge not successful", reference, data: charge }
-    }
-
-    // 4) Mark transaction success & store payload
-    await Transaction.updateOne(
-        { tx_ref: reference },
-        { status: "successful", rawPayLoad: charge }
-    );
-
-    // 5) Credit wallet using amount returned from Paystack(safer)
-    const creditedAmount = Number(charge.amount) / 100 //kobo => NGN
-    let wallet = await Wallet.findOne({ admin: adminId });
-    if (!wallet) {
-        wallet = await Wallet.create({ admin: adminId, balance: 0, history: [] });
-    }
-
-    wallet.balance += creditedAmount;
-    wallet.history.push({
-        type: "credit",
-        amount: creditedAmount,
-        description: "Wallet funding via Paystack (token)"
-    });
-    await wallet.save();
-
-    // 6) Ensure LIVE API keys exist
-    if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
-        const liveKeys = generateApiKeys("live");
-        admin.apiKeys.live = liveKeys;
-        await admin.save();
-    }
-
-    return {
-        success: true,
-        message: "Wallet funded via Paystack token",
-        newBalance: wallet.balance,
-        reference,
-        data: charge,
-    };
 }
+
+// export async function chargePaystackTokenAndCreditWallet({
+//     adminId,
+//     email,
+//     token,
+//     amount,
+//     metadata = {}
+// }) {
+//     // 1) Ensure Admin exists
+//     const admin = await Admin.findById(adminId);
+//     if (!admin) throw new Error("Admin not found");
+
+//     const amt = Number(amount);
+//     if (!Number.isFinite(amt) || amt <= 0) throw new Error("Invalid amount")
+
+//     // 2) Create local reference + DB record (pending)
+//     const reference = `fund_${adminId}_${Date.now()}`;
+
+//     await Transaction.create({
+//         admin: adminId,
+//         tx_ref: reference,
+//         amount: amt,
+//         provider: "paystack",
+//         status: "pending",
+//         description: "wallet funding via Paystack token"
+//     });
+
+//     // 3)   // ✅ Correct endpoint + correct field name for tokenized charge
+//     const payload = {
+//         authorization_code: token,
+//         email,
+//         amount: Math.round(Number(amt) * 100), //kobo
+//         reference,
+//         currency: "NGN",
+//         metadata: { ...metadata, adminId: String(adminId) }
+//     };
+
+//     const { data } = await api.post("/transaction/charge_authorization", payload);
+//       console.log("🔸 Paystack Charge Response:", data);
+
+//     // Handle Paystack response
+//     if (!data?.status) {
+//         // mark failed
+//         await Transaction.updateOne(
+//             { tx_ref: reference },
+//             { status: "failed", rawPayLoad: data }
+//         );
+//         return { success: false, message: data?.message || "Paystack charge failed", reference };
+//     }
+
+//     // Inspect cahrge object
+//     const charge = data.data;
+//     if (!charge || charge.status !== "success") {
+//         await Transaction.updateOne(
+//             { tx_ref: reference },
+//             { status: "failed", rawPayLoad: charge || data }
+//         );
+//         return { success: false, message: "Charge not successful", reference, data: charge }
+//     }
+
+//     // 4) Mark transaction success & store payload
+//     await Transaction.updateOne(
+//         { tx_ref: reference },
+//         { status: "successful", rawPayLoad: charge }
+//     );
+
+//     // 5) Credit wallet using amount returned from Paystack(safer)
+//     const creditedAmount = Number(charge.amount) / 100 //kobo => NGN
+//     let wallet = await Wallet.findOne({ admin: adminId });
+//     if (!wallet) {
+//         wallet = await Wallet.create({ admin: adminId, balance: 0, history: [] });
+//     }
+
+//     wallet.balance += creditedAmount;
+//     wallet.history.push({
+//         type: "credit",
+//         amount: creditedAmount,
+//         description: "Wallet funding via Paystack (token)"
+//     });
+//     await wallet.save();
+
+//     // 6) Ensure LIVE API keys exist
+//     if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
+//         const liveKeys = generateApiKeys("live");
+//         admin.apiKeys.live = liveKeys;
+//         await admin.save();
+//     }
+
+//     return {
+//         success: true,
+//         message: "Wallet funded via Paystack token",
+//         newBalance: wallet.balance,
+//         reference,
+//         data: charge,
+//     };
+// }
