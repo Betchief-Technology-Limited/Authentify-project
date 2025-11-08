@@ -17,7 +17,7 @@ import emailRouter from './routes/emailRoutes.js';
 import subscriptionRouter from './routes/subscriptionRoutes.js';
 import organizationRouter from './routes/organizationRoutes.js';
 import serviceAdminRouter from './routes/serviceAdminRoutes.js';
-
+import { paystackWebhook } from './controllers/paymentController.js';
 
 // import { testRouter } from './routes/testRoutes.js';
 
@@ -29,7 +29,7 @@ app.use(morgan('dev'));
 // ✅ Configure CORS
 const corsOptions = {
     origin: function (origin, callback) {
-        if (!origin) return callback(null, true); 
+        if (!origin) return callback(null, true);
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         } else {
@@ -55,7 +55,15 @@ app.options(/.*/, cors(corsOptions));
 // Parse cookies
 app.use(cookieParser());
 
-// Parse JSON
+
+// ✅ PAYSTACK WEBHOOK — must come before express.json()
+app.post(
+    '/api/payment/paystack/webhook',
+    express.raw({ type: 'application/json' }),  // <-- 👈 raw parser here
+    paystackWebhook
+);
+
+// ✅ Regular parsers for all other routes
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,32 +1,59 @@
 import express from 'express';
 import {
+    // 🔹 Flutterwave
     paymentVerification,
     paymentInit,
     flutterwaveWebhook,
+
+    // 🔹 Paystack (Standard flow)
     initializePaystackPayment,
     confirmPaystackPayment,
-    handlePaystackWebhookController
+
+
+    // 🔹 Paystack (Custom Tokenized flow)
+    paystackTokenize,
+    paystackChargeToken
 } from '../controllers/paymentController.js';
 import { authMiddleware } from '../middlewares/jwtAuth.js';
 
 const paymentRouter = express.Router();
 
-// verify payment
-paymentRouter.post('/init', authMiddleware, paymentInit)
-paymentRouter.post('/verify/:tx_ref', authMiddleware, paymentVerification);
+/* =====================================================
+   🟢 FLUTTERWAVE ROUTES
+   ===================================================== */
 
-// Flutterwave webhook
+// 1️⃣ Initialize Flutterwave payment (redirect)
+paymentRouter.post('/init', authMiddleware, paymentInit);
+
+// 2️⃣ Verify Flutterwave payment (after redirect)
+paymentRouter.get('/verify/:tx_ref', authMiddleware, paymentVerification);
+
+// 3️⃣ Flutterwave webhook (auto confirmation)
 paymentRouter.post('/webhook', express.json(), flutterwaveWebhook);
 
-paymentRouter.post('/paystack/init', authMiddleware, initializePaystackPayment);
-paymentRouter.post('/paystack/confirm', confirmPaystackPayment);
 
-// ✅ Paystack webhook (RAW body required)
-paymentRouter.post(
-    "/paystack/webhook",
-    express.raw({ type: "application/json" }), // <-- critical difference
-    handlePaystackWebhookController
-);
+
+/* =====================================================
+   💳 PAYSTACK ROUTES (STANDARD IFRAME/REDIRECT)
+   ===================================================== */
+
+// 1️⃣ Initialize Paystack standard payment
+paymentRouter.post('/paystack/init', authMiddleware, initializePaystackPayment);
+
+// 2️⃣ Confirm Paystack standard payment (frontend callback)
+paymentRouter.post('/paystack/confirm', authMiddleware, confirmPaystackPayment);
+
+
+/* =====================================================
+   🔐 PAYSTACK TOKENIZATION ROUTES (CUSTOM CARD FORM)
+   ===================================================== */
+
+// 1️⃣ Tokenize card securely (PCI-safe)
+paymentRouter.post('/paystack/tokenize', authMiddleware, paystackTokenize);
+
+// 2️⃣ Charge using token (no redirect, instant wallet credit)
+paymentRouter.post('/paystack/charge-token', authMiddleware, paystackChargeToken)
+
 
 
 export default paymentRouter
