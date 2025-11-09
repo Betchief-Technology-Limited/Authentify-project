@@ -12,7 +12,8 @@ import {
 
     // 🔹 Paystack (Custom Tokenized flow)
     paystackTokenize,
-    paystackChargeToken
+    paystackChargeToken,
+    paystackSubmitOtp
 } from '../controllers/paymentController.js';
 import { authMiddleware } from '../middlewares/jwtAuth.js';
 
@@ -51,8 +52,11 @@ paymentRouter.post('/paystack/confirm', authMiddleware, confirmPaystackPayment);
 // 1️⃣ Tokenize card securely (PCI-safe)
 paymentRouter.post('/paystack/tokenize', authMiddleware, paystackTokenize);
 
-// 2️⃣ Charge using token (no redirect, instant wallet credit)
-paymentRouter.post('/paystack/charge-token', authMiddleware, paystackChargeToken)
+// 2️⃣Send otp3️
+paymentRouter.post('/paystack/submit_otp', authMiddleware, paystackSubmitOtp);
+
+//3️⃣ Charge using token (no redirect, instant wallet credit)
+paymentRouter.post('/paystack/charge-token', authMiddleware, paystackChargeToken);
 
 
 

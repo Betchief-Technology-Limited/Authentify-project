@@ -4,6 +4,7 @@ import Transaction from "../models/transaction.js";
 import Admin from "../models/Admin.js";
 import Wallet from "../models/wallet.js";
 import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+import api from "../config/paystackApi.js";
 
 //First step: Initiate payment and save transaction
 /**
@@ -189,15 +190,6 @@ export const handleFlutterwaveWebhook = async (req, res) => {
    🔹 PAYSTACK INTEGRATION (New Section)
    ============================================ */
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
-const api = axios.create({
-    baseURL: "https://api.paystack.co",
-    headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        "Content-Type": "application/json"
-    }
-});
-
 /**
  * STEP 1: Initialize Paystack Transaction
  * - Creates a pending Transaction in your DB (provider 'paystack')
@@ -370,27 +362,95 @@ export async function tokenizeCardWithPaystack({
     number,
     expiry_month,
     expiry_year,
-    cvv
+    cvv,
+    amount
 }) {
-    const payload = {
-        email,
-        card: { number, cvv, expiry_month, expiry_year }
-    };
+    if (!email) throw new Error("Email required for tokenization");
+    if (!amount || Number(amount) <= 0) throw new Error("Invalid amount");
 
-    console.log("🔹 Sending to Paystack:", payload); //for debugging. We will remove all the console.log after testing
-    const { data } = await api.post("/charge/tokenize", payload);
+    // ✅ Defensive fix: always ensure number exists before using .replace()
+    const cleanNumber = String(number || "").replace(/\s+/g, "");
+    const cleanMonth = String(expiry_month || "").padStart(2, "0");
+    const cleanYear = String(expiry_year || "");
+    const cleanCVV = String(cvv || "");
 
-    console.log("🔸 Paystack Raw Response:", data); // 👈 Add this line
-    if (!data?.status) {
-        throw new Error(data?.message || "Paystack tokenization failed")
+    if (!cleanNumber || !cleanMonth || !cleanYear || !cleanCVV) {
+        throw new Error("Missing card fields (number, expiry, or cvv)");
     }
 
-    // ✅ Fix: Use authorization_code instead of token
-    return { 
-        token: data.data.authorization_code,
-        customerEmail: data.data.customer?.email // ✅ capture Paystack’s actual email
+    const payload = {
+        email,
+        amount: Math.round(Number(amount) * 100), // Paystack wants Kobo
+        card: {
+            number: cleanNumber,
+            cvv: cleanCVV,
+            expiry_month: cleanMonth,
+            expiry_year: cleanYear
+        }
+    };
+
+    console.log("🔹 Sending to Paystack charge:", {
+        email,
+        number: cleanNumber.replace(/\d(?=\d{4})/g, "*"),
+        expiry_month: cleanMonth,
+        expiry_year: cleanYear,
+        amount: payload.amount
+    });
+
+    const { data } = await api.post("/charge", payload);
+
+    if (!data?.status) throw new Error(data?.message || "Paystack charge failed");
+
+    if (data.data.status === "send_otp") {
+        return {
+            success: true,
+            otp_required: true,
+            reference: data.data.reference,
+            message: data.data.display_text || "Enter OTP to complete tokenization"
+        };
+    }
+
+    const authorization_code =
+        data.data?.authorization?.authorization_code ||
+        data.data?.authorization_code ||
+        data.data?.token;
+
+    if (!authorization_code) throw new Error("Paystack did not return an authorization code");
+
+    return {
+        success: true,
+        otp_required: false,
+        token: authorization_code,
+        customerEmail: data.data?.customer?.email,
+        raw: data
     };
 }
+
+
+
+// Submit OTP if requires by paystack
+export async function submitPaystackOTP({ otp, reference }) {
+    try {
+        const { data } = await api.post("/charge/submit_otp", {
+            otp,
+            reference,
+        });
+
+        if (!data.status) throw new Error(data.message);
+
+        const auth = data.data.authorization;
+        return {
+            success: true,
+            token: auth.authorization_code,
+            customerEmail: data.data.customer.email,
+            raw: data,
+        };
+    } catch (err) {
+        console.error("💥 OTP submission failed:", err.response?.data || err.message);
+        throw err;
+    }
+}
+
 
 /**
  * Charge via token (no redirect) + credit wallet + persist transaction
@@ -408,6 +468,9 @@ export async function chargePaystackTokenAndCreditWallet({
     const admin = await Admin.findById(adminId);
     if (!admin) throw new Error("Admin not found");
 
+    const customerEmail = email || admin.email; //Priotize provided email
+    console.log("customer email:", customerEmail)
+
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0) throw new Error("Invalid amount");
 
@@ -424,7 +487,7 @@ export async function chargePaystackTokenAndCreditWallet({
 
     const payload = {
         authorization_code: token,  // ✅ correct key
-        email,
+        email: customerEmail, //this match paystack's record
         amount: Math.round(amt * 100),
         reference,
         currency: "NGN",
@@ -446,13 +509,9 @@ export async function chargePaystackTokenAndCreditWallet({
                 { tx_ref: reference },
                 { status: "failed", rawPayLoad: charge || data }
             );
-            return {
-                success: false,
-                message: `Charge not successful (${charge?.status || "unknown"})`,
-                reference,
-                data: charge
-            };
+            return { success: false, message: `Charge not successful (${charge?.status || "unknown"})`, reference, data: charge };
         }
+
 
         // ✅ Mark success and credit wallet
         await Transaction.updateOne({ tx_ref: reference }, { status: "successful", rawPayLoad: charge });
@@ -484,6 +543,14 @@ export async function chargePaystackTokenAndCreditWallet({
         };
     } catch (err) {
         console.error("💥 Paystack charge_authorization failed:", err.response?.data || err.message);
+
+        // helpful debug on email mismatch
+        if (err.response?.data?.code === "email_address_authorization_code_mismatch") {
+            console.warn("⚠️ Paystack email/token mismatch detected!");
+            console.log("🔍 Token:", token);
+            console.log("🔍 Email attempted:", customerEmail);
+            console.log("🔍 Paystack response:", JSON.stringify(err.response.data, null, 2));
+        }
 
         await Transaction.updateOne(
             { tx_ref: reference },

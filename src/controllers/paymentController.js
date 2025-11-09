@@ -9,8 +9,10 @@ import {
     finalizePaystackFunding,
     handlePaystackWebhook,
     tokenizeCardWithPaystack,
+    submitPaystackOTP,
     chargePaystackTokenAndCreditWallet
 } from "../services/paymentService.js"
+import Transaction from "../models/transaction.js";
 
 
 /* =====================================================
@@ -172,39 +174,104 @@ export const paystackWebhook = async (req, res) => {
 
 export const paystackTokenize = async (req, res) => {
     try {
-        const { cardNumber, expiryMonth, expiryYear, cvv, card } = req.body;
+        const { cardNumber, expiryMonth, expiryYear, cvv, card, amount } = req.body;
 
-        // Accept both direct or nested card object
         const number = cardNumber || card?.number;
         const month = expiryMonth || card?.expiry_month;
         const year = expiryYear || card?.expiry_year;
         const code = cvv || card?.cvv;
 
-        if (!number || !month || !year || !code) {
+        if (!number || !month || !year || !code)
             return res.status(400).json({ success: false, message: "Missing card fields" });
-        }
 
-        const { token, customerEmail } = await tokenizeCardWithPaystack({
-            email: req.admin?.email || "caroline.mato1@gmail.com",
-            number: String(number).replace(/\s+/g, ""),
+        if (!amount || Number(amount) <= 0)
+            return res.status(400).json({ success: false, message: "Invalid amount" });
+
+        const customerEmail = req.admin?.email;
+        if (!customerEmail)
+            return res.status(401).json({ success: false, message: "Unauthorized: admin email required" });
+
+        const result = await tokenizeCardWithPaystack({
+            email: customerEmail,
+            number: String(number || "").replace(/\s+/g, ""),
             expiry_month: String(month).padStart(2, "0"),
-            expiry_year:
-                String(year).length === 2
-                    ? `20${year}`
-                    : String(year),
-            cvv: String(code)
+            expiry_year: String(year).length === 2 ? `20${year}` : String(year),
+            cvv: String(code),
+            amount: Number(amount)
         });
 
-        return res.status(200).json({ 
-            success: true, 
-            token,
-            customerEmail
-        })
+        if (result.otp_required) {
+            return res.status(200).json({
+                success: true,
+                otp_required: true,
+                reference: result.reference,
+                message: result.message
+            });
+        }
+
+        const reference = `paystack_token_${req.admin._id}_${Date.now()}`;
+        await Transaction.create({
+            admin: req.admin._id,
+            provider: "paystack",
+            tx_ref: reference,
+            amount: Number(amount),
+            status: "tokenized",
+            description: "Card tokenized (authorization_code)",
+            rawPayLoad: result.raw || {},
+            meta: {
+                authorization_code: result.token || "",
+                paystackCustomerEmail: result.customerEmail || customerEmail
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            otp_required: false,
+            token: result.token,
+            customerEmail: result.customerEmail || customerEmail,
+            reference
+        });
     } catch (err) {
-        console.error("💥 Paystack Tokenize Error:", err.message);
-        return res.status(500).json({ success: false, message: err.message })
+        console.error("💥 Paystack Tokenize Error:", err.response?.data || err.message);
+        return res.status(400).json({ success: false, message: err.message });
     }
-}
+};
+
+
+// submit otp to paystack 
+export const paystackSubmitOtp = async (req, res) => {
+    try {
+        const { otp, reference } = req.body;
+
+        if (!otp || !reference)
+            return res.status(400).json({ success: false, message: "OTP and reference required" });
+
+        const result = await submitPaystackOTP({ otp, reference });
+
+        const referenceId = `paystack_token_${req.admin._id}_${Date.now()}`;
+        await Transaction.create({
+            admin: req.admin._id,
+            provider: "paystack",
+            tx_ref: referenceId,
+            amount: 0,
+            status: "tokenized",
+            description: "Card tokenized via OTP",
+            rawPayLoad: result.raw,
+            meta: { authorization_code: result.token, paystackCustomerEmail: result.customerEmail }
+        });
+
+        return res.status(200).json({
+            success: true,
+            token: result.token,
+            customerEmail: result.customerEmail,
+            reference: referenceId
+        });
+    } catch (err) {
+        console.error("💥 Paystack OTP Error:", err.message);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 
 /**
  * STEP B: Charge using token (no redirect)
@@ -216,12 +283,10 @@ export const paystackTokenize = async (req, res) => {
 export const paystackChargeToken = async (req, res) => {
     try {
         const adminId = req.admin?._id;
-        console.log(adminId)
-        const email = req.admin?.email;
-        console.log(email)
-        const { token, amount } = req.body;
+        const fallbackEmail = req.admin?.email;
+        const { token, amount, email } = req.body;
 
-        if (!adminId || !email) {
+        if (!adminId || !fallbackEmail) {
             return res.status(401).json({ success: false, message: "Unathorized: admin missing" });
         }
 
@@ -229,15 +294,30 @@ export const paystackChargeToken = async (req, res) => {
             return res.status(400).json({ success: false, message: "token and valid amount are required" })
         }
 
+        // Prefer the email provided by the frontend only if it exactly matches the admin's email.
+        // Better: use email returned from tokenize endpoint (frontend should pass it back), or use fallbackEmail.
+        const customerEmail = (email && email === fallbackEmail) ? email : fallbackEmail;
+
+        console.log("🔹 AdminID:", adminId);
+        console.log("🔹 Incoming email:", email);
+        console.log("🔹 Fallback (admin) email:", fallbackEmail);
+        console.log("🔹 Final email to charge:", customerEmail);
+
+
         const result = await chargePaystackTokenAndCreditWallet({
             adminId,
-            email: req.body.customerEmail || req.admin.email,  // ✅ match tokenization email
+            email: customerEmail,  // ✅ send the one tied to the authorization_code
             token,
             amount: Number(amount),
-            metadata: { adminId: String(adminId), purpose: "wallet_topup_token" }
+            metadata: {
+                adminId: String(adminId),
+                purpose: "wallet_topup_token"
+            }
         });
 
-        return res.status(200).json(result)
+        return res
+            .status(result.success ? 200 : 400)
+            .json(result)
     } catch (err) {
         console.error("💥 Paystack Charge-Token Error:", err.message);
         return res.status(500).json({ success: false, message: err.message })

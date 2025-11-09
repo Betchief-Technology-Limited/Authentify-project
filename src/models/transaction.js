@@ -5,7 +5,7 @@ const transactionSchema = new mongoose.Schema({
     admin: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true },
     tx_ref: { type: String, required: true, unique: true },
     amount: { type: Number, required: true },
-    status: { type: String, enum: ['pending', 'successful', 'failed'], default: 'pending'},
+    status: { type: String, enum: ['pending', 'successful', 'tokenized', 'failed'], default: 'pending'},
     provider: { type: String, enum: [
         'flutterwave', //wallet funding
         'paystack', //future payment option
