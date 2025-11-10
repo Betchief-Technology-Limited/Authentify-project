@@ -7,6 +7,7 @@ import {
     updateOrganizationStatus,
     resendVerificationEmail
 } from '../controllers/serviceAdminController.js';
+import { getCurrentServiceAdmin } from '../controllers/getServiceAdminController.js';
 import { serviceAdminAuth } from '../middlewares/serviceAdminAuth.js';
 
 const serviceAdminRouter = express.Router();
@@ -38,6 +39,10 @@ serviceAdminRouter.get('/organizations', serviceAdminAuth, getAllOrganizations);
 serviceAdminRouter.patch('/organization/:id/status', serviceAdminAuth, updateOrganizationStatus);
 
 // ✅ Manual email resend
-serviceAdminRouter.post('/organization/:id/resend', serviceAdminAuth, resendVerificationEmail)
+serviceAdminRouter.post('/organization/:id/resend', serviceAdminAuth, resendVerificationEmail);
+
+// Get current service admin
+serviceAdminRouter.get('/me', serviceAdminAuth, getCurrentServiceAdmin);
+
 
 export default serviceAdminRouter;

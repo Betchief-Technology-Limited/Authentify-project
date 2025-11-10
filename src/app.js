@@ -17,7 +17,7 @@ import emailRouter from './routes/emailRoutes.js';
 import subscriptionRouter from './routes/subscriptionRoutes.js';
 import organizationRouter from './routes/organizationRoutes.js';
 import serviceAdminRouter from './routes/serviceAdminRoutes.js';
-
+import { paystackWebhook } from './controllers/paymentController.js';
 
 // import { testRouter } from './routes/testRoutes.js';
 
@@ -28,17 +28,17 @@ app.use(morgan('dev'));
 
 // ✅ Configure CORS
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`🚫 Blocked by CORS: ${origin}`);
-      // Return an actual error, not (null, false)
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.warn(`🚫 CORS blocked: ${origin}`);
+            return callback(null, false);
+        }
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -53,7 +53,15 @@ app.options(/.*/, cors(corsOptions));
 // Parse cookies
 app.use(cookieParser());
 
-// Parse JSON
+
+// ✅ PAYSTACK WEBHOOK — must come before express.json()
+app.post(
+    '/api/payment/paystack/webhook',
+    express.raw({ type: 'application/json' }),  // <-- 👈 raw parser here
+    paystackWebhook
+);
+
+// ✅ Regular parsers for all other routes
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
