@@ -6,7 +6,7 @@ export const getEmailProvider = async () => {
     const smtpPassword = getSmtpPassword(process.env.AWS_SECRET_KEY, process.env.SMTP_REGION);
 
     // Determine which email service to use
-    if (process.env.SMTP_HOST && process.env.SMTP_USER_EMAIL_SERVICE && smtpPassword) {
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword) {
         return 'smtp';
     }
 

@@ -6,7 +6,7 @@ import {
     updateOrganization,
     deleteOrganization,
     verifyOrganizationManually,
-    getOrganizationVerificationStatus
+    getOrganizationVerificationStatus,
 } from '../controllers/organizationController.js';
 
 

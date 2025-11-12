@@ -28,7 +28,7 @@ export const adminLogIn = async (req, res) => {
             });
         }
 
-        // check if the password used during signing up and saved in the database matches the one been used during login
+        // check if the password used during signing up is saved in the database matches the one been used during login
         const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid email or password' });
 
