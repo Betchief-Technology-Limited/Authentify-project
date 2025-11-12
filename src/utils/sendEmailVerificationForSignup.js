@@ -1,16 +1,16 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 const ses = new SESClient({
-    region: "us-east-1",
+    region: process.env.AWS_REGION || "us-east-1",
     credentials: {
-        accessKeyId: process.env.SMTP_USER,        // Your SES SMTP username (AKIA…)
-        secretAccessKey: process.env.AWS_SECRET_KEY, // Your SES IAM secret key
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,        // Your SES SMTP username (AKIA…)
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY, // Your SES IAM secret key
     },
 });
 
 export const sendVerificationEmail = async (email, name, verificationUrl) => {
     try {
-        const fromAddress = `${process.env.SMTP_FROM_NAME} <${process.env.EMAIL_FROM}>`;
+        const fromAddress = `${process.env.SMTP_FROM_NAME} <${process.env.EMAIL_FROM_SIGNUP}>`;
 
         const params = {
             Source: fromAddress, // ✅ e.g. "Authentify <no-reply@authentify.primex360.com>"
@@ -55,11 +55,11 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
 //     SMTP_HOST,
 //     SMTP_PORT,
 //     SMTP_USER,
-//     SMTP_PASS,
+//     // SMTP_PASS,
 //     EMAIL_FROM
 // } = process.env
 
-// // const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
+// const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
 
 // export const sendVerificationEmail = async (email, name, verificationUrl) => {
 //     try {
@@ -70,7 +70,7 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
 //             requireTLS: true,
 //             auth: {
 //                 user: SMTP_USER,
-//                 pass: SMTP_PASS
+//                 pass: smtpPass
 //             },
 //             tsl: {
 //                 rejectUnauthorized: false //this allows render's internal certs
