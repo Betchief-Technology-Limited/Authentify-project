@@ -13,7 +13,7 @@ export const verifyEmail = async (req, res) => {
                 });
             }
             return res.redirect(
-                "http://localhost:5174/user-verification?verified=false&reason=missing_token"
+                "http://localhost:3000/user-verification?verified=false&reason=missing_token"
             );
         }
 
@@ -32,7 +32,7 @@ export const verifyEmail = async (req, res) => {
                 });
             }
             return res.redirect(
-                "http://localhost:5174/user-verification?verified=false&reason=invalid_or_expired"
+                "http://localhost:3000/user-verification?verified=false&reason=invalid_or_expired"
             );
         }
 
@@ -52,7 +52,7 @@ export const verifyEmail = async (req, res) => {
 
         // ✅ Redirect for browser-based verification
         return res.redirect(
-            "http://localhost:5174/user-verification?verified=true"
+            "http://localhost:3000/user-verification?verified=true"
         );
     } catch (error) {
         console.error("❌ Email verification error:", error);
@@ -65,7 +65,7 @@ export const verifyEmail = async (req, res) => {
         }
 
         return res.redirect(
-            "http://localhost:5174/user-verification?verified=false&reason=server_error"
+            "http://localhost:3000/user-verification?verified=false&reason=server_error"
         );
     }
 };
