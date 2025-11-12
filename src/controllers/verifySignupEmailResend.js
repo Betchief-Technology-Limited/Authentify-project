@@ -26,7 +26,7 @@ export const resendVerificationEmail = async (req, res) => {
         admin.verificationExpires = Date.now() + 1000 * 60 * 60 * 24 //24hrs
         await admin.save();
 
-        const verificationUrl = `http://localhost:3000/api/admin/verify-email?token=${newToken}`;
+        const verificationUrl = `https://authentify-project.onrender.com/api/admin/verify-email?token=${newToken}`;
 
         sendVerificationEmail(admin.email, admin.firstName, verificationUrl).catch((err) => {
             console.error("❌ Email send error:", err.message);
