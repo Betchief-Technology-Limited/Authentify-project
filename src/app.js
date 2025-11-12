@@ -19,6 +19,7 @@ import organizationRouter from './routes/organizationRoutes.js';
 import serviceAdminRouter from './routes/serviceAdminRoutes.js';
 import { paystackWebhook } from './controllers/paymentController.js';
 import adminProfileRouter from './routes/adminProfileUpdateRoute.js';
+import changePasswordRouter from './routes/changePasswordRoutes.js';
 
 // import { testRouter } from './routes/testRoutes.js';
 
@@ -83,6 +84,7 @@ app.use('/api/organization', organizationRouter);
 app.use('/api/subscription', subscriptionRouter);
 app.use('/api/serviceadmin', serviceAdminRouter);
 app.use('/api/profile', adminProfileRouter);
+app.use('/api/change', changePasswordRouter);
 // app.use('/api/otp', testRouter)
 
 // 404 handler
