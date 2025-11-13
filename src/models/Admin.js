@@ -20,6 +20,11 @@ const adminSchema = new mongoose.Schema({
         test: apiKeysSchema,
         live: apiKeysSchema,
     },
+
+    // Reset passwords field
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
+    
     walletBalance: { type: Number, default: 0 }
 },
     { timestamps: true, collection: 'auth' }
