@@ -3,6 +3,7 @@ import ServiceAdmin from '../models/serviceAdmin.js';
 import Organization from '../models/organization.js';
 import { verifiedTemplate, rejectedTemplate } from '../utils/serviceAdminEmailTemplate.js';
 import { sendMail } from '../utils/mailerServiceAdmin.js';
+import Admin from '../models/Admin.js'
 
 const JWT_SECRET = process.env.SERVICE_ADMIN_JWT_SECRET;
 
@@ -160,56 +161,59 @@ export const updateOrganizationStatus = async (req, res) => {
             })
         }
 
-        // const organization = await Organization.findByIdAndUpdate(
-        //     id,
-        //     {
-        //         verificationStatus: status,
-        //         verificationFeedback: feedback || "",
-        //         verifiedAt: status === "verified" ? new Date() : null
-        //     },
-        //     { new: true }
-        // );
-
-        // if (!organization) {
-        //     return res.status(404).json({ success: false, message: "Organization not found" });
-        // }
         const organization = await Organization.findById(id);
         if (!organization)
-            return res
-                .status(404)
-                .json({ success: false, message: "Organization not found" });
+            return res.status(404).json({ success: false, message: "Organization not found" });
 
+        // Update verification status + feedback
         organization.verificationStatus = status;
         organization.verificationFeedback = feedback || "";
-        organization.verifiedAt = status === "verified" ? new Date() : null;
 
-        // -------EMAIL NOTIFICATION-------
+        // 1️⃣ Fetch organization owner (admin who submitted the form)
+        const organizationOwner = await Admin.findById(organization.clientId);
+        if (!organizationOwner) {
+            return res.status(404).json({
+                success: false,
+                message: "Organization owner (Admin) not found",
+            });
+        }
+
+        // 2️⃣ Determine contact person email
         const recipient =
             organization?.contactPerson?.email ||
             organization?.dataProtectionOfficer?.contactEmail ||
             null;
 
-        if (recipient) {
-            try {
-                const tpl =
-                    status === "verified"
-                        ? verifiedTemplate(organization)
-                        : rejectedTemplate(organization, feedback);
-
-                await sendMail({
-                    to: recipient,
-                    subject: tpl.subject,
-                    html: tpl.html,
-                    text: tpl.text,
-                });
-
-                organization.emailNotification.sent = true;
-                organization.emailNotification.sentAt = new Date();
-            } catch (mailErr) {
-                console.error("Email notify failed:", mailErr.message);
-            }
+        if (!recipient) {
+            return res.status(400).json({
+                success: false,
+                message: "No valid recipient email found",
+            });
         }
 
+        // 3️⃣ Prepare email template
+        const tpl =
+            status === "verified"
+                ? verifiedTemplate(organization)
+                : rejectedTemplate(organization, feedback);
+
+        // 4️⃣ Send the email (to contact person and to organization owner)
+        try {
+            await sendMail({
+                to: [recipient, organizationOwner.email],
+                // cc: [organizationOwner.email],
+                subject: tpl.subject,
+                html: tpl.html,
+                text: tpl.text,
+            });
+
+            organization.emailNotification.sent = true;
+            organization.emailNotification.sentAt = new Date();
+        } catch (mailErr) {
+            console.error("Email notify failed:", mailErr.message);
+        }
+
+        // Save updated organization
         await organization.save();
 
         return res.status(200).json({
@@ -226,7 +230,6 @@ export const updateOrganizationStatus = async (req, res) => {
         });
     }
 };
-
 
 // ========================
 // MANUAL RESEND EMAIL NOTIFICATION
