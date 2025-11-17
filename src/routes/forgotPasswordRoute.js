@@ -15,6 +15,6 @@ forgotPasswordRouter.post('/forgot-password', authLimiter, forgotPassword);
 forgotPasswordRouter.get('/verify-token', verifyResetToken);
 
 // Reset password
-forgotPasswordRouter.post('/reset-password/:token', resetPassword);
+forgotPasswordRouter.post('/reset-password', resetPassword);
 
 export default forgotPasswordRouter;
