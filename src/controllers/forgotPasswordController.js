@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import Admin from '../models/Admin.js';
 import { sendMail } from '../utils/mailerServiceAdmin.js';
+import generateSecureToken from '../utils/tokenGenerator.js'
 
 export const forgotPassword = async (req, res) => {
     try {
@@ -15,8 +16,8 @@ export const forgotPassword = async (req, res) => {
             return res.status(404).json({ success: false, message: "Admin not found" })
         }
 
-        // 1️⃣ Generate token
-        const resetToken = crypto.randomBytes(32).toString("hex");
+        // 1️⃣ Generate raw token
+        const resetToken = generateSecureToken(64);
 
         // 2️⃣ Hash token to store securely
         const hashed = crypto.createHash("sha256").update(resetToken).digest("hex");
@@ -27,11 +28,12 @@ export const forgotPassword = async (req, res) => {
         await admin.save();
 
         // 4️⃣ Reset link
-        const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
+        const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`; //this is for the frontend
 
         // 5️⃣ Email content
         const message = `
-            <h2>Password Reset Request</h2>
+            <p>Hello ${admin.firstName}</p>
+            <h2>You requested a password reset.</h2>
             <p>Click the link below to reset your password. This link expires in 10 minutes.</p>
             <a href="${resetUrl}" target="_blank">${resetUrl}</a>
         `;
@@ -107,8 +109,8 @@ export const resetPassword = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid or expired token" });
 
         admin.password = await bcrypt.hash(password, 10);
-        admin.resetPasswordToken = undefined;
-        admin.resetPasswordExpires = undefined;
+        admin.resetPasswordToken = null;
+        admin.resetPasswordExpires = null;
 
         await admin.save();
 

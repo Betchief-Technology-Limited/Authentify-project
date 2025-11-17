@@ -5,5 +5,6 @@ export const authLimiter = rateLimit({
     max: 8, //limit each IP to 8 request per windownMs
     message: { success: false, message: "Too many requests, please try again later" },
     standardHeaders: true,
-    legacyHeaders: false
-})
+    legacyHeaders: false,
+    skipFailedRequests: false
+});

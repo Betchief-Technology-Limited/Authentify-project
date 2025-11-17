@@ -26,6 +26,8 @@ import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
 
 const app = express();
 
+app.set("trust proxy", 1); // REQUIRED for express-rate-limit in local + deploymen
+
 app.use(morgan('dev'));
 
 

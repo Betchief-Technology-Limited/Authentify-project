@@ -12,9 +12,9 @@ const forgotPasswordRouter = express.Router();
 forgotPasswordRouter.post('/forgot-password', authLimiter, forgotPassword);
 
 // Verify token 
-forgotPasswordRouter.get('/verify-token', authLimiter, verifyResetToken);
+forgotPasswordRouter.get('/verify-token', verifyResetToken);
 
 // Reset password
-forgotPasswordRouter.post('/reset-password', resetPassword)
+forgotPasswordRouter.post('/reset-password/:token', resetPassword);
 
 export default forgotPasswordRouter;

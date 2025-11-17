@@ -22,9 +22,9 @@ const adminSchema = new mongoose.Schema({
     },
 
     // Reset passwords field
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
-    
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+
     walletBalance: { type: Number, default: 0 }
 },
     { timestamps: true, collection: 'auth' }
