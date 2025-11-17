@@ -5,8 +5,8 @@ import cookieParser from 'cookie-parser';
 import { allowedOrigins } from './config/corsConfig.js';
 import errorHandler from './config/errorHandler.js';
 
-import { adminRouter } from './routes/adminRoutes.js';
-import { otpSmsRouter } from './routes/otpRoutes.js';
+import adminRouter from './routes/adminRoutes.js'
+import otpSmsRouter from './routes/otpRoutes.js';
 import walletRouter from './routes/walletRoutes.js';
 import paymentRouter from './routes/paymentRoutes.js';
 import whatsappRouter from './routes/whatsappOtpRoutes.js';
@@ -20,10 +20,13 @@ import serviceAdminRouter from './routes/serviceAdminRoutes.js';
 import { paystackWebhook } from './controllers/paymentController.js';
 import adminProfileRouter from './routes/adminProfileUpdateRoute.js';
 import changePasswordRouter from './routes/changePasswordRoutes.js';
+import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
 
 // import { testRouter } from './routes/testRoutes.js';
 
 const app = express();
+
+app.set("trust proxy", 1); // REQUIRED for express-rate-limit in local + deploymen
 
 app.use(morgan('dev'));
 
@@ -83,6 +86,7 @@ app.use('/api/subscription', subscriptionRouter);
 app.use('/api/serviceadmin', serviceAdminRouter);
 app.use('/api/profile', adminProfileRouter);
 app.use('/api/change', changePasswordRouter);
+app.use('/api/admin', forgotPasswordRouter);
 // app.use('/api/otp', testRouter)
 
 // 404 handler
