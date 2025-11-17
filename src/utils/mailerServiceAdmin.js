@@ -17,6 +17,11 @@ const ses = new SESClient({
     },
 });
 
+/**
+ * Send an email using AWS SES (SDK)
+ * Works on both localhost and Render (no port issues)
+ */
+
 export async function sendMail({ to, subject, html, text }) {
     const fromAddress = `${SMTP_FROM_NAME || "Authentify"} <${EMAIL_FROM}>`;
 
