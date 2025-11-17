@@ -83,14 +83,16 @@ export const verifyResetToken = async (req, res) => {
 };
 
 
-// Reset password
 
+
+// Reset password
 export const resetPassword = async (req, res) => {
     try {
-        const { token, password, confirmPassword } = req.body;
+        const { token } = req.query;
+        const { password, confirmPassword } = req.body;
 
         if (!token)
-            return res.status(400).json({ success: false, message: "Token required" });
+            return res.status(400).json({ success: false, message: "Token missing" });
 
         if (!password || !confirmPassword)
             return res.status(400).json({ success: false, message: "Password fields required" });
@@ -119,10 +121,52 @@ export const resetPassword = async (req, res) => {
             message: "Password reset successful",
         });
     } catch (err) {
-        console.error("Reset Password Error:", err);
         return res.status(500).json({
             success: false,
             message: "Server error",
         });
     }
 };
+
+
+// export const resetPassword = async (req, res) => {
+//     try {
+//         const { token, password, confirmPassword } = req.body;
+
+//         if (!token)
+//             return res.status(400).json({ success: false, message: "Token required" });
+
+//         if (!password || !confirmPassword)
+//             return res.status(400).json({ success: false, message: "Password fields required" });
+
+//         if (password !== confirmPassword)
+//             return res.status(400).json({ success: false, message: "Passwords do not match" });
+
+//         const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+//         const admin = await Admin.findOne({
+//             resetPasswordToken: hashedToken,
+//             resetPasswordExpires: { $gt: Date.now() },
+//         });
+
+//         if (!admin)
+//             return res.status(400).json({ success: false, message: "Invalid or expired token" });
+
+//         admin.password = await bcrypt.hash(password, 10);
+//         admin.resetPasswordToken = null;
+//         admin.resetPasswordExpires = null;
+
+//         await admin.save();
+
+//         return res.status(200).json({
+//             success: true,
+//             message: "Password reset successful",
+//         });
+//     } catch (err) {
+//         console.error("Reset Password Error:", err);
+//         return res.status(500).json({
+//             success: false,
+//             message: "Server error",
+//         });
+//     }
+// };
