@@ -76,7 +76,7 @@ export const getWalletSummary = async (req, res) => {
     try {
         const adminId = req.admin._id;
 
-        // 1️⃣ Wallet load
+        // 1️⃣ Load wallet
         const wallet = await Wallet.findOne({ admin: adminId });
         if (!wallet) {
             return res.status(404).json({ success: false, message: "Wallet not found" });
@@ -91,7 +91,7 @@ export const getWalletSummary = async (req, res) => {
             if (tx.type === "debit") totalDebitedFromHistory += tx.amount;
         });
 
-        // 🔥 3️⃣ Debits from Transaction Model (API usage)
+        // 3️⃣ Debits from Transaction Model (API usage)
         const apiDebits = await Transaction.aggregate([
             {
                 $match: {
@@ -111,18 +111,18 @@ export const getWalletSummary = async (req, res) => {
         const totalDebitedFromAPI = apiDebits[0]?.total || 0;
         const totalDebited = totalDebitedFromHistory + totalDebitedFromAPI;
 
-        // 🔥 4️⃣ Build months array Jan–Dec
-        const months = Array.from({ length: 12 }).map((_, i) => {
-            const month = (i + 1).toString().padStart(2, "0");
-            const year = new Date().getFullYear();
-            return {
-                month: `${year}-${month}`,
-                credited: 0,
-                debited: 0
-            };
-        });
+        // 4️⃣ Construct Jan–Dec structure
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const year = new Date().getFullYear();
 
-        // 5️⃣ Aggregate from wallet history (Monthly credit & debit)
+        const months = Array.from({ length: 12 }).map((_, i) => ({
+            month: `${year}-${String(i + 1).padStart(2, "0")}`,
+            label: monthNames[i],
+            credited: 0,
+            debited: 0
+        }));
+
+        // 5️⃣ Aggregate wallet history monthly
         const walletAgg = await Wallet.aggregate([
             { $match: { admin: new mongoose.Types.ObjectId(adminId) } },
             { $unwind: "$history" },
@@ -137,7 +137,7 @@ export const getWalletSummary = async (req, res) => {
             }
         ]);
 
-        // 6️⃣ Aggregate API debits monthly (transaction model)
+        // 6️⃣ Aggregate API debits monthly
         const apiAgg = await Transaction.aggregate([
             {
                 $match: {
@@ -164,7 +164,7 @@ export const getWalletSummary = async (req, res) => {
             m.debited = (walletDebit?.total || 0) + (apiDebit?.totalDebited || 0);
         });
 
-        // 8️⃣ Return dashboard summary
+        // 8️⃣ Send response
         res.json({
             success: true,
             balance: wallet.balance,
@@ -182,6 +182,131 @@ export const getWalletSummary = async (req, res) => {
         });
     }
 };
+
+
+
+
+
+
+
+
+// export const getWalletSummary = async (req, res) => {
+//     try {
+//         const adminId = req.admin._id;
+
+//         // 1️⃣ Wallet load
+//         const wallet = await Wallet.findOne({ admin: adminId });
+//         if (!wallet) {
+//             return res.status(404).json({ success: false, message: "Wallet not found" });
+//         }
+
+//         // 2️⃣ Total credited & debited from wallet history
+//         let totalCredited = 0;
+//         let totalDebitedFromHistory = 0;
+
+//         wallet.history.forEach(tx => {
+//             if (tx.type === "credit") totalCredited += tx.amount;
+//             if (tx.type === "debit") totalDebitedFromHistory += tx.amount;
+//         });
+
+//         // 🔥 3️⃣ Debits from Transaction Model (API usage)
+//         const apiDebits = await Transaction.aggregate([
+//             {
+//                 $match: {
+//                     admin: new mongoose.Types.ObjectId(adminId),
+//                     status: "successful",
+//                     provider: { $ne: "flutterwave" } // flutterwave = CREDIT
+//                 }
+//             },
+//             {
+//                 $group: {
+//                     _id: null,
+//                     total: { $sum: "$amount" }
+//                 }
+//             }
+//         ]);
+
+//         const totalDebitedFromAPI = apiDebits[0]?.total || 0;
+//         const totalDebited = totalDebitedFromHistory + totalDebitedFromAPI;
+
+//         // 🔥 4️⃣ Build months array Jan–Dec
+//         const months = Array.from({ length: 12 }).map((_, i) => {
+//             const month = (i + 1).toString().padStart(2, "0");
+//             const year = new Date().getFullYear();
+//             return {
+//                 month: `${year}-${month}`,
+//                 credited: 0,
+//                 debited: 0
+//             };
+//         });
+
+//         // Adding months to the X-axis
+//         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+//         months.forEach((m, i) => {
+//             m.label = monthNames[i];   // 👈 Add human readable label
+//         });
+
+//         // 5️⃣ Aggregate from wallet history (Monthly credit & debit)
+//         const walletAgg = await Wallet.aggregate([
+//             { $match: { admin: new mongoose.Types.ObjectId(adminId) } },
+//             { $unwind: "$history" },
+//             {
+//                 $group: {
+//                     _id: {
+//                         month: { $dateToString: { format: "%Y-%m", date: "$history.createdAt" } },
+//                         type: "$history.type"
+//                     },
+//                     total: { $sum: "$history.amount" }
+//                 }
+//             }
+//         ]);
+
+//         // 6️⃣ Aggregate API debits monthly (transaction model)
+//         const apiAgg = await Transaction.aggregate([
+//             {
+//                 $match: {
+//                     admin: new mongoose.Types.ObjectId(adminId),
+//                     status: "successful",
+//                     provider: { $ne: "flutterwave" }
+//                 }
+//             },
+//             {
+//                 $group: {
+//                     _id: { month: { $dateToString: { format: "%Y-%m", date: "$createdAt" } } },
+//                     totalDebited: { $sum: "$amount" }
+//                 }
+//             }
+//         ]);
+
+//         // 7️⃣ Merge into months array
+//         months.forEach(m => {
+//             const walletCredit = walletAgg.find(x => x._id.month === m.month && x._id.type === "credit");
+//             const walletDebit = walletAgg.find(x => x._id.month === m.month && x._id.type === "debit");
+//             const apiDebit = apiAgg.find(x => x._id.month === m.month);
+
+//             m.credited = walletCredit?.total || 0;
+//             m.debited = (walletDebit?.total || 0) + (apiDebit?.totalDebited || 0);
+//         });
+
+//         // 8️⃣ Return dashboard summary
+//         res.json({
+//             success: true,
+//             balance: wallet.balance,
+//             totalCredited,
+//             totalDebited,
+//             monthly: months
+//         });
+
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to load wallet summary",
+//             error: err.message
+//         });
+//     }
+// };
 
 // export const getWalletSummary = async (req, res) => {
 //     try {
