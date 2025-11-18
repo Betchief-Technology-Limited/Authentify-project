@@ -76,6 +76,6 @@ export const verifySmsOtp = async (req, res) => {
         })
     } catch (err) {
         console.error('OTP verification error:', err.message);
-        return res.status(500).json({ message: 'Failed to verify OTP', error: err.message })
+        return res.status(500).json({ message: 'Failed to verify OTP', error: err.message });
     }
 };
