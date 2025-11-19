@@ -16,12 +16,12 @@ export const sendSmsOtp = async (req, res) => {
             otpLength //👈Forward client's requested OTP length
         });
 
-        if (!smsResp.success) {
+        if (!result.smsResp.success) {
             return res.status(502).json({
                 success: false,
                 message: "Mobishastra failed to send SMS",
-                providerCode: smsResp.responseCode,
-                providerRaw: smsResp.raw
+                providerCode: result.smsResp.responseCode,
+                providerRaw: result.smsResp.raw
             });
         }
 

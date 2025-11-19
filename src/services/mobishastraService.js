@@ -6,6 +6,7 @@ dotenv.config();
 export const sendSmsViaMobishastra = async (to, text) => {
     const url = 'https://mshastra.com/sendsms_api_json.aspx';
     // const url = 'http://emailtransapix.vispl.in/client/auth/loginSMSApi/sendsms_api_json.aspx';
+    
 
 
 
