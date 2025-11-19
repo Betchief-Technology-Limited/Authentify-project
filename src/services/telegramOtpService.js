@@ -52,7 +52,9 @@ export const createAndSendOtpTelegram = async ({ admin, to, otpLength }) => {
     amount: telegramCost,
     status: 'pending',
     provider: 'telegram',
-    description: 'Telegram OTP send',
+    serviceType: 'otp',
+    subservice: 'telegram',
+    description: 'Telegram OTP sent',
     rawPayLoad: { request_check: checkResp }
   });
 

@@ -10,5 +10,5 @@ export default function generateSecureToken(length = 64) {
         token +=chars[bytes[i] % chars.length]
     }
 
-    return token
+    return token;
 }

@@ -21,8 +21,7 @@ import { paystackWebhook } from './controllers/paymentController.js';
 import adminProfileRouter from './routes/adminProfileUpdateRoute.js';
 import changePasswordRouter from './routes/changePasswordRoutes.js';
 import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
-
-// import { testRouter } from './routes/testRoutes.js';
+import analyticsRouter from './routes/analyticsRoutes.js';
 
 const app = express();
 
@@ -89,7 +88,7 @@ app.use('/api/serviceadmin', serviceAdminRouter);
 app.use('/api/profile', adminProfileRouter);
 app.use('/api/change', changePasswordRouter);
 app.use('/api/admin', forgotPasswordRouter);
-// app.use('/api/otp', testRouter)
+app.use('/api/analytics', analyticsRouter);
 
 // 404 handler
 app.use((req, res) =>

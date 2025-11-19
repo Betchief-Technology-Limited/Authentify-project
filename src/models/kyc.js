@@ -14,7 +14,7 @@ const kycSchema = new mongoose.Schema({
             "voter_card",
             "drivers_licence"
         ],
-        reuired: true
+        required: true
     },
     cost: { type: Number, required: true },
     status: {
