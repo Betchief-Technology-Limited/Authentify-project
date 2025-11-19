@@ -54,27 +54,26 @@ export const subserviceCounts = async (req, res) => {
     try {
         const adminId = req.admin._id;
         const serviceKey = req.params.serviceKey;
-        const range = (req.query.range || 'month').toLowerCase(); // 'day' | 'week' | 'month'
-        const now = new Date();
+        // const range = (req.query.range || 'month').toLowerCase(); // 'day' | 'week' | 'month'
+        // const now = new Date();
 
-        let start;
+        // let start;
 
-        if (range === 'day') {
-            start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        } else if (range === 'week') {
-            start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            start.setDate(start.getDate() - (start.getDay() || 7) + 1); //Monday
-        } else {
-            start = new Date(now.getFullYear(), now.getMonth(), 1)
-        }
+        // if (range === 'day') {
+        //     start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // } else if (range === 'week') {
+        //     start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        //     start.setDate(start.getDate() - (start.getDay() || 7) + 1); //Monday
+        // } else {
+        //     start = new Date(now.getFullYear(), now.getMonth(), 1)
+        // }
 
         const pipeline = [
             {
                 $match: {
                     admin: new mongoose.Types.ObjectId(adminId),
                     serviceType: serviceKey,
-                    status: 'successful',
-                    createdAt: { $gte: start }
+                    status: 'successful'
                 }
             },
             {
