@@ -41,7 +41,9 @@ export const processKycVerification = async (admin, userIdentifier, type) => {
         tx_ref,
         amount: cost,
         status: 'pending',
-        provider: 'Authentify_kyc_service',
+        provider: 'kyc',
+        serviceType: "kyc",
+        subservice: type,
         description: `KYC verification (${type})`
     });
 

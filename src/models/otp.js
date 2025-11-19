@@ -23,7 +23,7 @@ const otpSchema = new mongoose.Schema({
 
    //Selectable OTP specific fields
    options: [{ type: String }], //array of codes to display to user
-   requestId: { type: String, unique: true }, //unique OTP session ID
+   requestId: { type: String, unique: true, sparse: true }, //unique OTP session ID
    deviceFingerprint: { type: String }, //track app/device requesting OTP
    attempts: { type: Number, default: 0 }, // number of verification attempts
    maxAttempts: { type: Number, default: 5 },

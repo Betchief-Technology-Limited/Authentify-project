@@ -16,13 +16,30 @@ export const sendSmsOtp = async (req, res) => {
             otpLength //👈Forward client's requested OTP length
         });
 
+        if (!smsResp.success) {
+            return res.status(502).json({
+                success: false,
+                message: "Mobishastra failed to send SMS",
+                providerCode: smsResp.responseCode,
+                providerRaw: smsResp.raw
+            });
+        }
+
         return res.status(200).json({
             success: true,
-            message: 'OTP generated and SMS request sent via Mobishastra',
+            message: 'OTP generated and SMS delivered successfully',
             sms: result.smsResp,
             otpId: result.otpDoc._id,
             expiresAt: result.otpDoc.expiresAt
         });
+
+        // return res.status(200).json({
+        //     success: true,
+        //     message: 'OTP generated and SMS request sent via Mobishastra',
+        //     sms: result.smsResp,
+        //     otpId: result.otpDoc._id,
+        //     expiresAt: result.otpDoc.expiresAt
+        // });
     } catch (err) {
         return res.status(500).json({
             message: 'Failed to send OTP',
@@ -32,7 +49,7 @@ export const sendSmsOtp = async (req, res) => {
 };
 
 
- // Verify OTP code
+// Verify OTP code
 export const verifySmsOtp = async (req, res) => {
     try {
         const { otpId, code } = req.body;

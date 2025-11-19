@@ -1,5 +1,7 @@
 import { generateSecret, bufferToBase32, totp } from "authentifyotp";
 import Otp from "../models/otp.js";
+import Transaction from "../models/transaction.js";
+import { v4 as uuidv4 } from "uuid";
 import { sendSmsViaMobishastra } from "./mobishastraService.js";
 import { checkBalance, deduct } from "./walletService.js";
 import { getIO } from "../config/socket.js";
@@ -45,17 +47,38 @@ export const createAndSendOtpSms = async ({ admin, to, otpLength }) => {
     });
 
     // 5) Deduct wallet per OTP sent
-    if(smsResp.success){
+    if (smsResp.success) {
         await deduct(admin._id, smsCost, 'SMS OTP sent');
 
-        // 📊 Emit analytics
-        getIO().emit("otp_activity", {
-            service: "sms",
+        // create transaction record for analytics
+        const txRef = `otp_sms_${admin._id}_${Date.now()}_${uuidv4().slice(0,6)}`;
+
+        await Transaction.create({
             admin: admin._id,
+            tx_ref: txRef,
             amount: smsCost,
-            timeStamp: new Date(),
-            message: "SMS OTP successfully sent"
+            status: 'successful',
+            provider: 'mobishastra', //keep existing provider value
+            serviceType: 'otp',
+            subservice: 'sms',
+            description: `SMS OTP sent to ${to}`,
+            rawPayLoad: smsResp.raw || {}
         })
+        // 📊 Emit analytics
+        try {
+            const io = getIO();
+            if (io) {
+                io.emit("otp_activity", {
+                    service: "sms",
+                    admin: admin._id,
+                    amount: smsCost,
+                    timeStamp: new Date(),
+                    message: "SMS OTP successfully sent"
+                });
+            }
+        } catch (err) {
+            console.error("Socket.io not ready:", err.message);
+        }
     }
 
     return { otpDoc, smsResp }
