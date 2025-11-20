@@ -224,7 +224,7 @@ export async function initTransaction({ email, adminId, amount, metadata = {} })
         currency: 'NGN',
         reference,
         metadata: { ...metadata, adminId: String(adminId) },
-        // optional: callback_url if you want Paystack to redirect back to your FE
+        // callback_url if you want Paystack to redirect back to your FE
         callback_url: "http://localhost:5173/wallet/paystack/redirect"
     });
     return data; // { status, message, data: { authorization_url, access_code, reference } }
