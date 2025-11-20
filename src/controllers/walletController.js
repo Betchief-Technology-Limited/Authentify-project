@@ -97,7 +97,8 @@ export const getWalletSummary = async (req, res) => {
                 $match: {
                     admin: new mongoose.Types.ObjectId(adminId),
                     status: "successful",
-                    provider: { $ne: "flutterwave" } // flutterwave = CREDIT
+                    provider: 'paystack',
+                    serviceType: { $ne: "wallet_topup" } // Exclude funding transactions
                 }
             },
             {
@@ -143,7 +144,8 @@ export const getWalletSummary = async (req, res) => {
                 $match: {
                     admin: new mongoose.Types.ObjectId(adminId),
                     status: "successful",
-                    provider: { $ne: "flutterwave" }
+                    provider: 'paysatck',
+                    serviceType: { $ne: "wallet_topup" }
                 }
             },
             {

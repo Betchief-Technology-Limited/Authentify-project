@@ -8,6 +8,7 @@ import {
     // 🔹 Paystack (Standard flow)
     initializePaystackPayment,
     confirmPaystackPayment,
+    verifyPaystackPaymentStatus,
 
 
     // 🔹 Paystack (Custom Tokenized flow)
@@ -43,6 +44,10 @@ paymentRouter.post('/paystack/init', authMiddleware, initializePaystackPayment);
 
 // 2️⃣ Confirm Paystack standard payment (frontend callback)
 paymentRouter.post('/paystack/confirm', authMiddleware, confirmPaystackPayment);
+
+// 3️⃣ Poll Paystack transaction statuss
+paymentRouter.get('/paystack/verify/:reference', authMiddleware, verifyPaystackPaymentStatus);
+
 
 
 /* =====================================================

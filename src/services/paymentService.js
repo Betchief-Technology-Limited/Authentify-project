@@ -5,6 +5,7 @@ import Admin from "../models/Admin.js";
 import Wallet from "../models/wallet.js";
 import { generateApiKeys } from "../utils/apiKeyGenerator.js";
 import api from "../config/paystackApi.js";
+import { credit } from "./walletService.js";
 
 //First step: Initiate payment and save transaction
 /**
@@ -211,7 +212,9 @@ export async function initTransaction({ email, adminId, amount, metadata = {} })
         amount: Number(amount),
         provider: "paystack",
         status: "pending",
-        description: "wallet funding"
+        serviceType: 'wallet_topup',
+        description: "wallet funding via paystack",
+        rawPayLoad: {}
     });
 
     // 3️⃣ Inititalize on Paystack
@@ -222,7 +225,7 @@ export async function initTransaction({ email, adminId, amount, metadata = {} })
         reference,
         metadata: { ...metadata, adminId: String(adminId) },
         // optional: callback_url if you want Paystack to redirect back to your FE
-        // callback_url: "https://your-fe.com/wallet/confirmation"
+        callback_url: "http://localhost:5173/wallet/paystack/redirect"
     });
     return data; // { status, message, data: { authorization_url, access_code, reference } }
 }
@@ -244,10 +247,21 @@ export async function finalizePaystackFunding(adminId, reference) {
     const transaction = await Transaction.findOne({ tx_ref: reference });
     if (!transaction) throw new Error("Transaction not found");
 
+    // 🔥 Prevent double-crediting
+    if (transaction.status === "successful") {
+        const wallet = await Wallet.findOne({ admin: adminId });
+        return {
+            success: true,
+            message: "Already credited",
+            newBalance: wallet?.balance || 0
+        };
+    }
+
     // 2) Verify with Paystack
     const verification = await verifyTransaction(reference);
     const payData = verification?.data;
 
+    // ❌ Payment failed
     if (!payData || payData.status !== "success") {
         transaction.status = 'failed';
         await transaction.save();
@@ -255,28 +269,45 @@ export async function finalizePaystackFunding(adminId, reference) {
     }
 
 
+    // ATOMIC status update to prevent race-condition
+    const updated = await Transaction.findOneAndUpdate(
+        { tx_ref: reference, status: 'pending' },
+        { status: 'successful', rawPayLoad: payData },
+        { new: true }
+    )
+
+    // If update failed, another process already credited
+    if (!updated) {
+        const wallet = await Wallet.findOne({ admin: adminId });
+        return {
+            success: true,
+            message: "Already credited",
+            newBalance: wallet.balance
+        };
+    }
     // 3) Mark transaction success & store payload
-    transaction.status = "successful";
-    transaction.rawPayLoad = payData;
-    await transaction.save();
+    // transaction.status = "successful";
+    // transaction.rawPayLoad = payData;
+    // await transaction.save();
 
     // 4) Credit wallet (use Paystack amount to be safe)
     const creditedAmount = Number(payData.amount) / 100; //converting from kobo
-    let wallet = await Wallet.findOne({ admin: adminId });
-    if (!wallet)
-        wallet = await Wallet.create({
-            admin: adminId,
-            balance: 0,
-            history: []
-        });
+    await credit(adminId, creditedAmount, "Wallet funding via Paystack");
+    // let wallet = await Wallet.findOne({ admin: adminId });
+    // if (!wallet)
+    //     wallet = await Wallet.create({
+    //         admin: adminId,
+    //         balance: 0,
+    //         history: []
+    //     });
 
-    wallet.balance += creditedAmount
-    wallet.history.push({
-        type: "credit",
-        amount: creditedAmount,
-        description: "Wallet funding via Paystack"
-    });
-    await wallet.save();
+    // wallet.balance += creditedAmount
+    // wallet.history.push({
+    //     type: "credit",
+    //     amount: creditedAmount,
+    //     description: "Wallet funding via Paystack"
+    // });
+    // await wallet.save();
 
 
     // 5) Ensure LIVE API keys exist
@@ -286,6 +317,9 @@ export async function finalizePaystackFunding(adminId, reference) {
         admin.apiKeys.live = liveKeys;
         await admin.save();
     }
+
+    const wallet = await Wallet.findOne({ admin: adminId });
+
     return {
         success: true,
         message: "Wallet funded via Paystack",
@@ -324,6 +358,7 @@ export const handlePaystackWebhook = async (req, res) => {
 
         const event = JSON.parse(raw.toString());
         const data = event?.data;
+        
         if (!data?.reference) {
             return res.status(400).json({ success: false, message: "No reference provided" });
         }
@@ -338,7 +373,14 @@ export const handlePaystackWebhook = async (req, res) => {
                 return res.status(400).json({ success: false, message: "Missing adminId in metadata" });
             }
 
-            // Idempotency: if it was already credited, this will no-op
+            // Idempotency check to prevent duplicate credit
+            const tx = await Transaction.findOne({ tx_ref: reference });
+            if (tx?.status === "successful") {
+                console.log("Webhook: Transaction already credited. Skipping.");
+                return res.sendStatus(200);
+            }
+
+            // Safe single-credit
             await finalizePaystackFunding(adminId, reference);
         }
 
