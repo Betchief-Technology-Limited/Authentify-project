@@ -19,8 +19,8 @@ const transactionSchema = new mongoose.Schema({
     rawPayLoad: { type: Object },
 
     subservice: { type: String, default: null }, //"premium_nin", "slip_nin","sms"
-    serviceType: { type: String, enum: ['kyc', 'otp'], required: true } //"kyc", "otp", "email"
-    
+    serviceType: { type: String, enum: ['kyc', 'otp', 'wallet_topup'], required: true } //"kyc", "otp", "email"
+
 }, { timestamps: true });
 
 const Transaction = userDB.model('Transaction', transactionSchema);

@@ -4,15 +4,19 @@ import {
     initiateFlutterwavePayment,
     handleFlutterwaveWebhook,
 
-    // 🔹 Paystack (standard + tokenized)
+    // 🔹 Paystack (standard)
     initTransaction,
     finalizePaystackFunding,
+    verifyTransaction,
     handlePaystackWebhook,
+
+    // 🔹 Paystack (custom card + tokenized)
     tokenizeCardWithPaystack,
     submitPaystackOTP,
     chargePaystackTokenAndCreditWallet
 } from "../services/paymentService.js"
 import Transaction from "../models/transaction.js";
+import Wallet from "../models/wallet.js";
 
 
 /* =====================================================
@@ -75,7 +79,7 @@ export const flutterwaveWebhook = async (req, res) => {
 
 
 /* =====================================================
-   💳 PAYSTACK CONTROLLERS (Standard + Tokenized)
+   💳 PAYSTACK CONTROLLERS (Standard )
    ===================================================== */
 
 
@@ -85,9 +89,7 @@ export const initializePaystackPayment = async (req, res) => {
         const { amount } = req.body;
         const adminId = req.admin?._id;
         const email = req.admin?.email;
-        // console.log(adminId);
-        // const adminId = "6900049b75db258e6cfab356"; // your test admin _id
-        // const email = "caroline.mato1@gmail.com";
+
 
         if (!adminId || !email) {
             return res.status(401).json({ success: false, message: "Unathourized: admin missing" });
@@ -124,11 +126,13 @@ export const initializePaystackPayment = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Paystack transaction initialized",
-            data: {
-                reference: initRes.data.reference,
-                authorization_url: initRes.data.authorization_url,
-                email
-            }  // send authorization_url + reference to the frontend
+            paymentUrl: initRes.data.authorization_url,
+            tx_ref: initRes.data.reference
+            // data: {
+            //     reference: initRes.data.reference,
+            //     authorization_url: initRes.data.authorization_url,
+            //     email
+            // }  // send authorization_url + reference to the frontend
         });
     } catch (err) {
         console.error("💥 Paystack Init Error:", err.message);
@@ -136,7 +140,7 @@ export const initializePaystackPayment = async (req, res) => {
     }
 }
 
-// STEP 2️⃣ – Confirm Paystack payment (after frontend callback)
+// STEP 2️⃣ – Confirm Paystack payment (manual confirmation not for polling)
 export const confirmPaystackPayment = async (req, res) => {
     try {
         const { reference } = req.body;
@@ -154,7 +158,93 @@ export const confirmPaystackPayment = async (req, res) => {
     }
 };
 
-// STEP 3️⃣ – Handle Paystack webhook (server-to-server)
+// Step 3️⃣ - NEW: Poll endpoint for automatic frontend verification
+
+export const verifyPaystackPaymentStatus = async (req, res) => {
+    try {
+        const { reference } = req.params;
+        const adminId = req.admin?._id;
+
+        if (!reference) {
+            return res.status(400).json({
+                success: false,
+                message: "Reference is required"
+            })
+        }
+
+        // Find transaction
+        const tx = await Transaction.findOne({ tx_ref: reference });
+
+        if (!tx) {
+            return res.status(400).json({
+                success: false,
+                message: "Transaction not found"
+            })
+        }
+
+        // 🟢 Webhook has already credited wallet
+        if (tx.status === 'successful') {
+            const wallet = await Wallet.findOne({ admin: adminId });
+            return res.json({
+                success: true,
+                newBalance: wallet?.balance || 0,
+                message: "Payment successful (via webhook)"
+            });
+        }
+
+        // 🔴 Transaction failed
+        if (tx.status === 'failed') {
+            return res.json({
+                success: false,
+                message: 'not successful'
+            })
+        }
+
+        // 🟡 Check paystack status BUT DO NOT CREDIT HERE
+        const verification = await verifyTransaction(reference);
+        const payData = verification?.data;
+
+        // Still pending
+        if (!payData || payData.status === 'pending') {
+            return res.json({
+                success: false,
+                message: 'pending'
+            })
+        }
+
+        // Paystack reports success BUT webhook has not arrived yet
+        if (payData.status === 'success') {
+            // DO NOT CREDIT HERE
+            const wallet = await Wallet.findOne({ admin: adminId });
+            return res.json({
+                success: true,
+                newBalance: wallet?.balance || 0,
+                message: "Payment successful (awaiting webhook sync)"
+            });
+        }
+
+        // if (payData.status === 'success') {
+        //     const result = await finalizePaystackFunding(adminId, reference);
+        //     return res.json(result)
+        // }
+
+        // Finally, handle failure
+        tx.status = 'failed';
+        await tx.save();
+
+        return res.json({
+            success: false,
+            message: 'not successful'
+        })
+    } catch (err) {
+        console.error("💥 Paystack Polling Error:", err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+}
+
+
+
+// STEP 4️⃣ – Handle Paystack webhook (server-to-server)
 export const paystackWebhook = async (req, res) => {
     await handlePaystackWebhook(req, res)
 };
