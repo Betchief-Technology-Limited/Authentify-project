@@ -12,10 +12,17 @@ export const serviceSummary = async (req, res) => {
         const serviceKey = req.params.serviceKey; // e.g 'kyc'
         const now = new Date();
 
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // const startOfWeeK = new Date(startOfToday);
+        // startOfWeeK.setDate(startOfWeeK.getDate() - ((startOfWeeK.getDay() + 6) % 7));
+        // const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const startOfToday = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
         const startOfWeeK = new Date(startOfToday);
-        startOfWeeK.setDate(startOfWeeK.getDate() - ((startOfWeeK.getDay() + 6) % 7));
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        startOfWeeK.setUTCDate(startOfWeeK.getUTCDate() - ((startOfWeeK.getUTCDay() + 6) % 7));
+
+        const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
 
         const matchBase = {
             admin: new mongoose.Types.ObjectId(adminId),
