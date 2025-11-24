@@ -46,10 +46,8 @@ const corsOptions = {
     optionsSuccessStatus: 200,
 };
 
-// ✅ Apply globally before routes
 app.use(cors(corsOptions));
-
-// ✅ (Optional) Handle preflight safely for Express 5
+// ✅ Use regex for preflight requests (Express 5 fix)
 app.options(/.*/, cors(corsOptions));
 
 // Parse cookies
