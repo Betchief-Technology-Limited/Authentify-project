@@ -22,6 +22,7 @@ import adminProfileRouter from './routes/adminProfileUpdateRoute.js';
 import changePasswordRouter from './routes/changePasswordRoutes.js';
 import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
 import analyticsRouter from './routes/analyticsRoutes.js';
+import submitHelpRouter from './routes/customerHelpRoute.js';
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use('/api/profile', adminProfileRouter);
 app.use('/api/change', changePasswordRouter);
 app.use('/api/admin', forgotPasswordRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/customer', submitHelpRouter);
 
 // 404 handler
 app.use((req, res) =>
