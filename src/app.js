@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { allowedOrigins } from './config/corsConfig.js';
 import errorHandler from './config/errorHandler.js';
 
-import adminRouter from './routes/adminRoutes.js'
+import adminRouter from './routes/adminRoutes.js';
 import otpSmsRouter from './routes/otpRoutes.js';
 import walletRouter from './routes/walletRoutes.js';
 import paymentRouter from './routes/paymentRoutes.js';
@@ -50,11 +50,6 @@ app.use(cors(corsOptions));
 
 // ✅ (Optional) Handle preflight safely for Express 5
 app.options(/.*/, cors(corsOptions));
-
-// app.use(cors({
-//     origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
-//     credentials: true
-// }));
 
 // Parse cookies
 app.use(cookieParser());

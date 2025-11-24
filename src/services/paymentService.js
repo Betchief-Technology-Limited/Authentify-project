@@ -245,7 +245,12 @@ export async function finalizePaystackFunding(adminId, reference) {
 
     // 1) Find your pending transaction
     const transaction = await Transaction.findOne({ tx_ref: reference });
-    if (!transaction) throw new Error("Transaction not found");
+    if (!transaction) {
+        return res.status(404).json({
+            success: false,
+            message: "Transaction not found"
+        })
+    }
 
     // 🔥 Prevent double-crediting
     if (transaction.status === "successful") {
@@ -467,7 +472,6 @@ export async function tokenizeCardWithPaystack({
         raw: data
     };
 }
-
 
 
 // Submit OTP if requires by paystack

@@ -105,13 +105,17 @@ export const createAndSendOtpTelegram = async ({ admin, to, otpLength }) => {
   await transaction.save();
 
   //📊 Emit live analytics
-  getIO().emit("otp_activity", {
-    service: "telegram",
-    admin: admin._id,
-    amount: telegramCost,
-    timestamp: new Date(),
-    message: "Telegram OTP sent successfully"
-  })
+  try {
+    getIO().emit("otp_activity", {
+      service: "telegram",
+      admin: admin._id,
+      amount: telegramCost,
+      timestamp: new Date(),
+      message: "Telegram OTP sent successfully"
+    })
+  } catch (err) {
+    console.error("Socket.io not ready:", err.message);
+  }
 
 
   return { otpDoc, telegramResp: sendResp, transaction };

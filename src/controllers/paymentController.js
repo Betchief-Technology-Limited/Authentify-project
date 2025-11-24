@@ -176,7 +176,7 @@ export const verifyPaystackPaymentStatus = async (req, res) => {
         const tx = await Transaction.findOne({ tx_ref: reference });
 
         if (!tx) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 message: "Transaction not found"
             })
