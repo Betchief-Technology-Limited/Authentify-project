@@ -1,6 +1,7 @@
 import Kyc from "../models/kyc.js";
 import Transaction from "../models/transaction.js";
 import Wallet from "../models/wallet.js";
+import { getIO } from "../config/socket.js";
 
 const KYC_COSTS = {
     premium_nin: parseFloat(process.env.KYC_COST_PREMIUM_NIN || '10'),
