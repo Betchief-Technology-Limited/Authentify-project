@@ -5,7 +5,11 @@ import {
     logoutServiceAdmin,
     getAllOrganizations,
     updateOrganizationStatus,
-    resendVerificationEmail
+    resendVerificationEmail,
+
+    // Help request form
+    getAllHelpRequests,
+    respondToHelpRequest
 } from '../controllers/serviceAdminController.js';
 import { getCurrentServiceAdmin } from '../controllers/getServiceAdminController.js';
 import { serviceAdminAuth } from '../middlewares/serviceAdminAuth.js';
@@ -43,6 +47,10 @@ serviceAdminRouter.post('/organization/:id/resend', serviceAdminAuth, resendVeri
 
 // Get current service admin
 serviceAdminRouter.get('/me', serviceAdminAuth, getCurrentServiceAdmin);
+
+// For help request
+serviceAdminRouter.get('/help', serviceAdminAuth, getAllHelpRequests);
+serviceAdminRouter.put('/help/:id/respond', serviceAdminAuth, respondToHelpRequest);
 
 
 export default serviceAdminRouter;

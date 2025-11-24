@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import ServiceAdmin from '../models/serviceAdmin.js';
 import Organization from '../models/organization.js';
-import { verifiedTemplate, rejectedTemplate } from '../utils/serviceAdminEmailTemplate.js';
+import Help from '../models/customerHelp.js';
+import { verifiedTemplate, rejectedTemplate, helpReplyTemplate } from '../utils/serviceAdminEmailTemplate.js';
 import { sendMail } from '../utils/mailerServiceAdmin.js';
 import Admin from '../models/Admin.js';
 
@@ -395,6 +396,104 @@ export const resendVerificationEmail = async (req, res) => {
             success: false,
             message: "Failed to resend verification email",
             error: error.message,
+        });
+    }
+};
+
+
+// ========================
+// GET ALL HELP REQUESTS
+// ========================
+export const getAllHelpRequests = async (req, res) => {
+    try {
+        const { status } = req.query;
+
+        const FILTER_STATUS = ["pending", "answereds"];
+        let query = {};
+
+        if (status && FILTER_STATUS.includes(status.toLowerCase())) {
+            query.status = status.toLowerCase();
+        }
+
+        const helpRequests = await Help.find(query).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: helpRequests.length,
+            data: helpRequests
+        });
+    } catch (error) {
+        console.error("Get Help Requests Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+
+// ========================
+// RESPOND TO HELP REQUEST
+// ========================
+export const respondToHelpRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { adminResponse, status } = req.body;
+
+        const VALID_STATUSES = ["pending", "answered"];
+
+        if (!VALID_STATUSES.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid status. Use 'pending' or 'answered'."
+            });
+        }
+
+        const help = await Help.findById(id);
+        if (!help) {
+            return res.status(404).json({
+                success: false,
+                message: "Help request not found"
+            });
+        }
+
+        // Update response
+        help.adminResponse = adminResponse;
+        help.status = status;
+        help.resolvedAt = status === "answered" ? new Date() : null;
+
+        // Prepare email
+        const tpl = helpReplyTemplate(help, adminResponse);
+
+        try {
+            await sendMail({
+                to: help.companyEmail,
+                subject: tpl.subject,
+                html: tpl.html,
+                text: tpl.text
+            });
+
+            help.emailNotification.sent = true;
+            help.emailNotification.sentAt = new Date();
+        } catch (mailErr) {
+            console.error("Email send failed:", mailErr.message);
+        }
+
+        await help.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Help request updated successfully",
+            data: help
+        });
+
+    } catch (error) {
+        console.error("Respond Help Request Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
         });
     }
 };

@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { allowedOrigins } from './config/corsConfig.js';
 import errorHandler from './config/errorHandler.js';
 
-import adminRouter from './routes/adminRoutes.js'
+import adminRouter from './routes/adminRoutes.js';
 import otpSmsRouter from './routes/otpRoutes.js';
 import walletRouter from './routes/walletRoutes.js';
 import paymentRouter from './routes/paymentRoutes.js';
@@ -22,6 +22,7 @@ import adminProfileRouter from './routes/adminProfileUpdateRoute.js';
 import changePasswordRouter from './routes/changePasswordRoutes.js';
 import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
 import analyticsRouter from './routes/analyticsRoutes.js';
+import submitHelpRouter from './routes/customerHelpRoute.js';
 
 const app = express();
 
@@ -48,11 +49,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // ✅ Use regex for preflight requests (Express 5 fix)
 app.options(/.*/, cors(corsOptions));
-
-// app.use(cors({
-//     origin: 'http://localhost:5173', //this will be replaced with the real frontend URL
-//     credentials: true
-// }));
 
 // Parse cookies
 app.use(cookieParser());
@@ -87,6 +83,7 @@ app.use('/api/profile', adminProfileRouter);
 app.use('/api/change', changePasswordRouter);
 app.use('/api/admin', forgotPasswordRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/customer', submitHelpRouter);
 
 // 404 handler
 app.use((req, res) =>

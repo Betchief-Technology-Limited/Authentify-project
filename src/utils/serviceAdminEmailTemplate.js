@@ -1,3 +1,4 @@
+
 export const verifiedTemplate = (org) => {
     const name = org?.registeredName || "there";
     // const cp = org?.contactPerson?.fullName || "there";
@@ -35,3 +36,15 @@ export const rejectedTemplate = (org, feedback) => {
         text: `Hi ${name}, ${name}'s submission was rejected. ${feedback ? "Reason: " + feedback : ""} Please update and resubmit.`,
     };
 };
+
+// RESPOND TO HELP REQUEST
+export const helpReplyTemplate = (help, reply) => ({
+    subject: `Re: ${help.subject}`,
+    html: `
+            <p>Hello ${help.firstName}</p>
+            <p>Your help request has been reviewed. Below is our response:</p>
+            <p><strong>${reply}</strong></p>
+            <p>Thank you,<br/>Support Team</p>
+          `,
+    text: `Your help request: ${help.subject}\n\nResponse:\n${reply}`
+})

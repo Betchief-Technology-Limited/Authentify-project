@@ -45,7 +45,7 @@ export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength }) => {
         await deduct(admin._id, whatsappCost, 'WhatsApp OTP sent');
 
         // Create transaction record for analytics
-        const txRef = `otp_whatsapp_${admin._id}_${Date.now()}_${uuidv4().slice(0,6)}`;
+        const txRef = `otp_whatsapp_${admin._id}_${Date.now()}_${uuidv4().slice(0, 6)}`;
 
         await Transaction.create({
             admin: admin._id,
@@ -59,13 +59,17 @@ export const createAndSendOtpWhatsapp = async ({ admin, to, otpLength }) => {
             rawPayLoad: whatsappResp.raw || {}
         })
 
-        getIO().emit("otp_activity", {
-            service: "whatsapp",
-            admin: admin._id,
-            amount: whatsappCost,
-            timestamp: new Date(),
-            message: "WhatApp OTP sent successfully!!!"
-        });
+        try {
+            getIO().emit("otp_activity", {
+                service: "whatsapp",
+                admin: admin._id,
+                amount: whatsappCost,
+                timestamp: new Date(),
+                message: "WhatApp OTP sent successfully!!!"
+            });
+        } catch (err) {
+            console.error("Socket.io not ready:", err.message);
+        }
     }
 
     return { otpDoc, whatsappResp }

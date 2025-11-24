@@ -7,4 +7,4 @@ const kycRouter = express.Router();
 kycRouter.post('/verify', apiKeyAuth, verifyKyc);
 kycRouter.post('/status/:tx_ref', apiKeyAuth, getKycRecordStatus);
 
-export default kycRouter
+export default kycRouter;

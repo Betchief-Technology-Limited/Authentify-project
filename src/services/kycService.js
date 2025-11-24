@@ -1,6 +1,7 @@
 import Kyc from "../models/kyc.js";
 import Transaction from "../models/transaction.js";
 import Wallet from "../models/wallet.js";
+import { getIO } from "../config/socket.js";
 
 const KYC_COSTS = {
     premium_nin: parseFloat(process.env.KYC_COST_PREMIUM_NIN || '10'),
@@ -68,13 +69,18 @@ export const processKycVerification = async (admin, userIdentifier, type) => {
     await wallet.save();
 
     // 📊 Emit live analytics
-    getIO().emit("kyc_activity", {
-        service: type,
-        admin: admin._id,
-        amount: cost,
-        timestamp: new Date(),
-        message: `KYC verification (${type}) completed`,
-    });
+    try {
+        getIO().emit("kyc_activity", {
+            service: type,
+            admin: admin._id,
+            amount: cost,
+            timestamp: new Date(),
+            message: `KYC verification (${type}) completed`,
+        });
+
+    } catch (err) {
+        console.log("Socket not ready, continuing...");
+    }
 
     return { kycRecord, transaction }
 

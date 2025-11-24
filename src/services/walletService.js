@@ -1,4 +1,5 @@
 import Wallet from "../models/wallet.js";
+import { getIO } from "../config/socket.js";
 
 /**
  * Auto-create wallet if missing 
@@ -42,13 +43,17 @@ export const deduct = async (adminId, cost, description = 'Service charge') => {
     await wallet.save();
 
     // 📊 Emit wallet update
-    getIO().emit("wallet_update", {
-        admin: adminId,
-        balance: wallet.balance,
-        change: -cost,
-        description,
-        timestamp: new Date(),
-    });
+    try {
+        getIO().emit("wallet_update", {
+            admin: adminId,
+            balance: wallet.balance,
+            change: -cost,
+            description,
+            timestamp: new Date(),
+        });
+    } catch (err) {
+        console.log("Socket not ready, continuing...", err.message);
+    }
 
     return wallet;
 }

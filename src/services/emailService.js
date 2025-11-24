@@ -276,13 +276,17 @@ export const sendEmail = async ({ admin, from, to, subject, body, templateId, pr
         await wallet.save();
 
         // 📊 Emit analytics
-        getIO().emit("email_activity", {
-            service: "email",
-            admin: admin._id,
-            amount: EMAIL_COST,
-            timestamp: new Date(),
-            message: `Email sent successfully to ${to}`,
-        });
+        try {
+            getIO().emit("email_activity", {
+                service: "email",
+                admin: admin._id,
+                amount: EMAIL_COST,
+                timestamp: new Date(),
+                message: `Email sent successfully to ${to}`,
+            });
+        } catch (err) {
+            console.log("Socket not ready, continuing...", err.message);
+        }
 
         emailDoc.status = 'sent';
         emailDoc.providerResponse = sendResp;

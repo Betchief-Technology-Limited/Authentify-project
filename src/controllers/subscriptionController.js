@@ -1,28 +1,6 @@
 import Subscription from "../models/subscription.js";
 import Wallet from "../models/wallet.js";
-
-// predefined cost per subservice
-const SERVICE_COSTS = {
-    otp: {
-        sms: 10,
-        whatsapp: 2,
-        telegram: 50
-    },
-
-    kyc: {
-        premium_nin: 10,
-        virtual_nin: 12,
-        slip_nin: 5,
-        passport: 17,
-        voter_card: 4,
-        drivers_licence: 60
-    },
-    email: { 
-        basic_email: 5, 
-        bulk_email: 15,
-        marketing_email: 10
-    }
-}
+import SERVICE_COSTS from "../config/serviceCosts.js";
 
 // 📌 Subscribe client to a subservice
 export const subscribeService = async (req, res) => {
