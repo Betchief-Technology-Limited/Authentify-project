@@ -6,6 +6,7 @@ import { verifiedTemplate, rejectedTemplate, helpReplyTemplate } from '../utils/
 import { sendMail } from '../utils/mailerServiceAdmin.js';
 import Admin from '../models/Admin.js';
 
+
 const JWT_SECRET = process.env.SERVICE_ADMIN_JWT_SECRET;
 
 // ========================
@@ -441,6 +442,7 @@ export const respondToHelpRequest = async (req, res) => {
     try {
         const { id } = req.params;
         const { adminResponse, status } = req.body;
+        console.log(adminResponse);
 
         const VALID_STATUSES = ["pending", "answered"];
 

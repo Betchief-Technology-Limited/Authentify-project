@@ -6,7 +6,8 @@ const SERVICE_COSTS = {
     otp: {
         sms: Number(process.env.SMS_API_COST),
         whatsapp: Number(process.env.WHATSAPP_API_COST),
-        telegram: Number(process.env.TG_GATEWAY_API_COST)
+        telegram: Number(process.env.TG_GATEWAY_API_COST),
+        email: Number(process.env.EMAIL_API_COST)
     },
 
     kyc: {
