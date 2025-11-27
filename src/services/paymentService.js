@@ -225,7 +225,8 @@ export async function initTransaction({ email, adminId, amount, metadata = {} })
         reference,
         metadata: { ...metadata, adminId: String(adminId) },
         // callback_url if you want Paystack to redirect back to your FE
-        callback_url: "http://localhost:5173/wallet/paystack/redirect"
+        callback_url: "http://localhost:3000/wallet/payment/verify"
+        //callback_url: "http://localhost:5173/wallet/paystack/redirect"
     });
     return data; // { status, message, data: { authorization_url, access_code, reference } }
 }
