@@ -23,6 +23,8 @@ import changePasswordRouter from './routes/changePasswordRoutes.js';
 import forgotPasswordRouter from './routes/forgotPasswordRoute.js';
 import analyticsRouter from './routes/analyticsRoutes.js';
 import submitHelpRouter from './routes/customerHelpRoute.js';
+import kycQuickVerifcationRouter from './routes/kycQuickVerificationRoute.js';
+import emailOtpRouter from './routes/emailOtpRoute.js';
 
 const app = express();
 
@@ -71,6 +73,7 @@ app.use('/api', adminRouter);
 app.use('/api/otp', otpSmsRouter);
 app.use('/api/otp', whatsappRouter);
 app.use('/api/otp', telegramRouter);
+app.use('/api/otp', emailOtpRouter);
 app.use('/api/wallet', walletRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/otp/selectable', selectableRouter);
@@ -84,6 +87,7 @@ app.use('/api/change', changePasswordRouter);
 app.use('/api/admin', forgotPasswordRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/customer', submitHelpRouter);
+app.use('/api/single-request', kycQuickVerifcationRouter);
 
 // 404 handler
 app.use((req, res) =>

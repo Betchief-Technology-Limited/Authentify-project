@@ -48,3 +48,45 @@ export const helpReplyTemplate = (help, reply) => ({
           `,
     text: `Your help request: ${help.subject}\n\nResponse:\n${reply}`
 })
+
+// PREPARE OTP EMAIL CONTENTS
+// export const sendEmailOtpTemplate = (code) => {
+//     const ttlMinutes = Math.floor(process.env.OTP_TTL_SECONDS / 60)
+//     return {
+//         subject: "Your Authentify verification code",
+//         html: `
+//     <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+//       <h3>Your verification code</h3>
+//       <p>Your Authentify verification code is:</p>
+//       <p style="font-size:22px;font-weight:700;letter-spacing:4px">${code}</p>
+//       <p>This code expires in ${ttlMinutes} minute(s).</p>
+//       <hr/>
+//       <p style="font-size:12px;color:#6b7280">If you did not request this code, ignore this message.</p>
+//     </div>
+//   `,
+//         text: `Your Authentify verification code is ${code}. It expires in ${ttlMinutes} minute(s).`
+//     }
+// }
+
+
+export const sendEmailOtpTemplate = (code) => {
+    const ttlSeconds = parseInt(process.env.OTP_TTL_SECONDS || "300", 10);
+    const ttlMinutes = Math.floor(ttlSeconds / 60);
+
+    return {
+        subject: "Your Authentify verification code",
+        html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+                <h3>Your verification code</h3>
+                <p>Your Authentify verification code is:</p>
+                <p style="font-size:22px;font-weight:700;letter-spacing:4px;color:#16a34a">${code}</p>
+                <p>This code expires in ${ttlMinutes} minute(s).</p>
+                <hr/>
+                <p style="font-size:12px;color:#6b7280">
+                    If you did not request this code, please ignore this message.
+                </p>
+            </div>
+        `,
+        text: `Your Authentify verification code is ${code}. It expires in ${ttlMinutes} minute(s).`
+    };
+};
