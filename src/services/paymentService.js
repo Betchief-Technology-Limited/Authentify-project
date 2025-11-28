@@ -246,10 +246,10 @@ export async function finalizePaystackFunding(adminId, reference) {
     // 1) Find your pending transaction
     const transaction = await Transaction.findOne({ tx_ref: reference });
     if (!transaction) {
-        return res.status(404).json({
+        return {
             success: false,
             message: "Transaction not found"
-        })
+        };
     }
 
     // 🔥 Prevent double-crediting
@@ -258,7 +258,9 @@ export async function finalizePaystackFunding(adminId, reference) {
         return {
             success: true,
             message: "Already credited",
-            newBalance: wallet?.balance || 0
+            amountFunded: transaction.amount || 0,
+            newBalance: wallet?.balance || 0,
+            reference
         };
     }
 
@@ -270,68 +272,151 @@ export async function finalizePaystackFunding(adminId, reference) {
     if (!payData || payData.status !== "success") {
         transaction.status = 'failed';
         await transaction.save();
-        return { success: false, message: "Paystack payment not successful" };
+        return {
+            success: false,
+            message: "Paystack payment not successful"
+        };
     }
 
+    // Convert Paystack amount from kobo to naira
+    const amountFunded = Number(payData.amount) / 100;
 
-    // ATOMIC status update to prevent race-condition
+    // 3) ATOMIC update (avoids double credit)
     const updated = await Transaction.findOneAndUpdate(
         { tx_ref: reference, status: 'pending' },
-        { status: 'successful', rawPayLoad: payData },
+        {
+            status: 'successful',
+            rawPayLoad: payData,
+            amount: amountFunded
+        },
         { new: true }
-    )
+    );
 
-    // If update failed, another process already credited
     if (!updated) {
+        // Another process already handled it
         const wallet = await Wallet.findOne({ admin: adminId });
         return {
             success: true,
             message: "Already credited",
-            newBalance: wallet.balance
+            amountFunded,
+            newBalance: wallet?.balance || 0,
+            reference
         };
     }
-    // 3) Mark transaction success & store payload
-    // transaction.status = "successful";
-    // transaction.rawPayLoad = payData;
-    // await transaction.save();
 
-    // 4) Credit wallet (use Paystack amount to be safe)
-    const creditedAmount = Number(payData.amount) / 100; //converting from kobo
-    await credit(adminId, creditedAmount, "Wallet funding via Paystack");
-    // let wallet = await Wallet.findOne({ admin: adminId });
-    // if (!wallet)
-    //     wallet = await Wallet.create({
-    //         admin: adminId,
-    //         balance: 0,
-    //         history: []
-    //     });
+    // 4) Credit wallet
+    await credit(adminId, amountFunded, "Wallet funding via Paystack");
 
-    // wallet.balance += creditedAmount
-    // wallet.history.push({
-    //     type: "credit",
-    //     amount: creditedAmount,
-    //     description: "Wallet funding via Paystack"
-    // });
-    // await wallet.save();
-
-
-    // 5) Ensure LIVE API keys exist
+    // 5) Ensure LIVE keys exist
     const admin = await Admin.findById(adminId);
-    if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
-        const liveKeys = generateApiKeys("live");
-        admin.apiKeys.live = liveKeys;
+    if (!admin.apiKeys?.live?.publicKey || !admin.apiKeys?.live?.secretKey) {
+        admin.apiKeys.live = generateApiKeys("live");
         await admin.save();
     }
 
+    // 6) Return updated wallet balance
     const wallet = await Wallet.findOne({ admin: adminId });
 
     return {
         success: true,
         message: "Wallet funded via Paystack",
+        amountFunded,          // 🔥 RETURNED HERE
         newBalance: wallet.balance,
         reference
-    }
+    };
 }
+
+// export async function finalizePaystackFunding(adminId, reference) {
+
+//     // 1) Find your pending transaction
+//     const transaction = await Transaction.findOne({ tx_ref: reference });
+//     if (!transaction) {
+//         return res.status(404).json({
+//             success: false,
+//             message: "Transaction not found"
+//         })
+//     }
+
+//     // 🔥 Prevent double-crediting
+//     if (transaction.status === "successful") {
+//         const wallet = await Wallet.findOne({ admin: adminId });
+//         return {
+//             success: true,
+//             message: "Already credited",
+//             newBalance: wallet?.balance || 0
+//         };
+//     }
+
+//     // 2) Verify with Paystack
+//     const verification = await verifyTransaction(reference);
+//     const payData = verification?.data;
+
+//     // ❌ Payment failed
+//     if (!payData || payData.status !== "success") {
+//         transaction.status = 'failed';
+//         await transaction.save();
+//         return { success: false, message: "Paystack payment not successful" };
+//     }
+
+
+//     // ATOMIC status update to prevent race-condition
+//     const updated = await Transaction.findOneAndUpdate(
+//         { tx_ref: reference, status: 'pending' },
+//         { status: 'successful', rawPayLoad: payData },
+//         { new: true }
+//     )
+
+//     // If update failed, another process already credited
+//     if (!updated) {
+//         const wallet = await Wallet.findOne({ admin: adminId });
+//         return {
+//             success: true,
+//             message: "Already credited",
+//             newBalance: wallet.balance
+//         };
+//     }
+//     // 3) Mark transaction success & store payload
+//     // transaction.status = "successful";
+//     // transaction.rawPayLoad = payData;
+//     // await transaction.save();
+
+//     // 4) Credit wallet (use Paystack amount to be safe)
+//     const creditedAmount = Number(payData.amount) / 100; //converting from kobo
+//     await credit(adminId, creditedAmount, "Wallet funding via Paystack");
+//     // let wallet = await Wallet.findOne({ admin: adminId });
+//     // if (!wallet)
+//     //     wallet = await Wallet.create({
+//     //         admin: adminId,
+//     //         balance: 0,
+//     //         history: []
+//     //     });
+
+//     // wallet.balance += creditedAmount
+//     // wallet.history.push({
+//     //     type: "credit",
+//     //     amount: creditedAmount,
+//     //     description: "Wallet funding via Paystack"
+//     // });
+//     // await wallet.save();
+
+
+//     // 5) Ensure LIVE API keys exist
+//     const admin = await Admin.findById(adminId);
+//     if (!admin.apiKeys?.live.publicKey || !admin.apiKeys?.live.secretKey) {
+//         const liveKeys = generateApiKeys("live");
+//         admin.apiKeys.live = liveKeys;
+//         await admin.save();
+//     }
+
+//     const wallet = await Wallet.findOne({ admin: adminId });
+
+//     return {
+//         success: true,
+//         message: "Wallet funded via Paystack",
+//         newBalance: wallet.balance,
+//         reference
+//     }
+// }
 
 /**
  * STEP 3: Handle Paystack Webhook (Server → Server Notification)
@@ -363,7 +448,7 @@ export const handlePaystackWebhook = async (req, res) => {
 
         const event = JSON.parse(raw.toString());
         const data = event?.data;
-        
+
         if (!data?.reference) {
             return res.status(400).json({ success: false, message: "No reference provided" });
         }
