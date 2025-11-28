@@ -25,7 +25,9 @@ const adminSchema = new mongoose.Schema({
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
 
-    walletBalance: { type: Number, default: 0 }
+    walletBalance: { type: Number, default: 0 },
+
+    lowBalanceNotified: { type: Boolean, default: false } // NEW
 },
     { timestamps: true, collection: 'auth' }
 

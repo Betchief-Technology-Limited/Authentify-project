@@ -90,3 +90,39 @@ export const sendEmailOtpTemplate = (code) => {
         text: `Your Authentify verification code is ${code}. It expires in ${ttlMinutes} minute(s).`
     };
 };
+
+
+// WALLET FUNDED TEMPLATE
+export const walletFundedTemplate = ({ amount, balance }) => {
+    return {
+        subject: "Your Authentify wallet has been funded ✅",
+        html: `
+            <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+                <h2>Wallet Funded Successfully 🎉</h2>
+                <p><strong>Amount added:</strong> ₦${Number(amount).toLocaleString()}</p>
+                <p><strong>New balance:</strong> ₦${Number(balance).toLocaleString()}</p>
+                <hr/>
+                <p style="font-size:12px;color:#6b7280">If you did not perform this transaction, contact support immediately.</p>
+            </div>
+            `,
+        text: `Your wallet was funded with ₦${amount}. New balance: ₦${balance}.`
+    }
+}
+
+// LOWBALANCETEMPLATE
+export const lowBalanceTemplate = ({ balance, callsLeft }) => {
+    return {
+        subject: "Low wallet balance alert ⚠️",
+        html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;color:#111">
+        <h3>Low Wallet Balance Warning</h3>
+        <p>Your wallet balance is low: <strong>₦${Number(balance).toLocaleString()}</strong></p>
+        <p>Estimated remaining API calls (min-cost): <strong>${callsLeft}</strong></p>
+        <p>Please top up to avoid service disruption.</p>
+        <hr/>
+        <p style="font-size:12px;color:#6b7280">You can top-up from your dashboard.</p>
+      </div>
+    `,
+        text: `Low wallet balance: ₦${balance}. Estimated remaining calls: ${callsLeft}. Please top up.`
+    };
+};

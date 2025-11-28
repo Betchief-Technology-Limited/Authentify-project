@@ -98,7 +98,7 @@ export async function sendMail({ to, subject, html, text }) {
 //     SMTP_FROM_NAME
 // } = process.env
 
-// // const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION);
+// // const smtpPass = getSmtpPassword(AWS_SECRET_KEY, process.env.SMTP_REGION); 8055563185
 
 // const transporter = nodemailer.createTransport({
 //     host: SMTP_HOST,
