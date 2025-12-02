@@ -55,6 +55,7 @@ export const apiKeyAuth = async (req, res, next) => {
     if (path.includes("/otp/sms")) subservice = "sms";
     else if (path.includes("/otp/whatsapp")) subservice = "whatsapp";
     else if (path.includes("otp/telegram")) subservice = "telegram";
+    else if (path.includes("otp/email")) subservice = "email";
     else if (path.includes("/email")) subservice = "email";
     else if (path.includes("/kyc/premium_nin")) subservice = "premium_nin";
     else if (path.includes("/kyc/virtual_nin")) subservice = "virtual_nin";
