@@ -28,7 +28,7 @@ export const forgotPassword = async (req, res) => {
         await admin.save();
 
         // 4️⃣ Reset link
-        const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`; //this is for the frontend
+        const resetUrl = `https://authentify-frontend.vercel.app/reset-password?token=${resetToken}`; //this is for the frontend
 
         // 5️⃣ Email content
         const message = `
