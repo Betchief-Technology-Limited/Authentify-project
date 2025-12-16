@@ -8,7 +8,7 @@ const ses = new SESClient({
     },
 });
 
-export const sendVerificationEmail = async (email, name, verificationUrl) => {
+export const sendVerificationEmail = async (email, org, verificationUrl) => {
     try {
         const fromAddress = `${process.env.SMTP_FROM_NAME} <${process.env.EMAIL_FROM_SIGNUP}>`;
 
@@ -21,7 +21,7 @@ export const sendVerificationEmail = async (email, name, verificationUrl) => {
                     Html: {
                         Data: `
               <div style="font-family:Arial,sans-serif;padding:20px;line-height:1.6">
-                <h2>Hello ${name},</h2>
+                <h2>Hello, ${org}</h2>
                 <p>Thank you for signing up on <b>Authentify</b>.</p>
                 <p>Please verify your email by clicking the button below:</p>
                 <a href="${verificationUrl}" 

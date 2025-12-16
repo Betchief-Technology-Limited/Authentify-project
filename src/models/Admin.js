@@ -7,15 +7,18 @@ const apiKeysSchema = new mongoose.Schema({
 });
 
 const adminSchema = new mongoose.Schema({
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    firstName: { type: String, default: null },
+    lastName: { type: String, default: null },
     organization: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     terms: { type: Boolean, required: true },
+    // Email verification
     emailVerified: { type: Boolean, default: false },
     verificationToken: { type: String, default: null },
     verificationExpires: { type: Date, default: null },
+
+    // API keys
     apiKeys: {
         test: apiKeysSchema,
         live: apiKeysSchema,

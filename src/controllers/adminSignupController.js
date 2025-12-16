@@ -9,9 +9,9 @@ import { sendVerificationEmail } from '../utils/sendEmailVerificationForSignup.j
 
 export const adminSignUp = async (req, res) => {
     try {
-        const { firstName, lastName, email, organization, password, confirmPassword, terms } = req.body;
+        const { organization, email, password, confirmPassword, terms } = req.body;
 
-        if (!firstName || !lastName || !email || !organization || !password || !confirmPassword || !terms) {
+        if (!organization || !email || !password || !confirmPassword || !terms) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
@@ -26,7 +26,7 @@ export const adminSignUp = async (req, res) => {
         // First confirm if there is an existing admin
         const existingAdmin = await Admin.findOne({ email });
         if (existingAdmin) {
-            return res.status(400).json({ message: 'User already exist with this email' })
+            return res.status(400).json({ message: 'Account with this email already exists' })
         }
 
         // hashing of the password
@@ -40,10 +40,8 @@ export const adminSignUp = async (req, res) => {
         const testKeys = generateApiKeys('test');
 
         const newAdmin = new Admin({
-            firstName,
-            lastName,
-            email,
             organization,
+            email,
             password: hashedPassword,
             terms,
             apiKeys: {
@@ -64,20 +62,19 @@ export const adminSignUp = async (req, res) => {
         });
 
         // Send verification email
-        const verificationUrl = `https://authentify-project.onrender.com/api/admin/verify-email?token=${verificationToken}`;
+        const verificationUrl = `http://localhost:3006/api/admin/verify-email?token=${verificationToken}`;
 
         // ✅ Send email (non-blocking — signup response is sent immediately)
 
-        sendVerificationEmail(email, firstName, verificationUrl).catch((err) => {
+        sendVerificationEmail(email, organization, verificationUrl).catch((err) => {
             console.error("❌ Email send error:", err.message);
         });
 
         return res.status(201).json({
             success: true,
-            message: 'Signup successful! Please check your email to verify your account before loggin in',
+            message: 'Signup successful! Please check your email to verify your account before login in',
             adminId: newAdmin._id,
-            firstName,
-            lastName
+            organization
         });
     } catch (err) {
         console.error(err);
