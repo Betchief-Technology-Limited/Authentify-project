@@ -6,7 +6,7 @@ import { initSocket } from "./src/config/socket.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3006;
 
 async function start() {
     // Wait for all connections to be ready before starting the server
