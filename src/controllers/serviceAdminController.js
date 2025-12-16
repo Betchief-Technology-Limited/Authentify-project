@@ -118,32 +118,31 @@ export const logoutServiceAdmin = (req, res) => {
 // };
 
 export const getAllOrganizations = async (req, res) => {
-    try {
-        const { status } = req.query;
+  try {
+    const { status } = req.query;
 
-        let query = {};
-        if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
-            query.verificationStatus = status.toLowerCase();
-        }
-
-        const organizations = await Organization.find(query).sort({ createdAt: -1 });
-
-        return res.status(200).json({
-            success: true,
-            count: organizations.length,
-            data: organizations,
-        });
-    } catch (error) {
-        console.error("Fetch Organizations Error:", error);
-        return res
-            .status(500)
-            .json({
-                success: false,
-                message: "Server error",
-                error: error.message
-            });
+    let query = {};
+    if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
+      query.verificationStatus = status.toLowerCase();
     }
+
+    const organizations = await Organization.find(query).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: organizations.length,
+      data: organizations,
+    });
+  } catch (error) {
+    console.error("Fetch Organizations Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
 };
+
 
 
 // ========================
