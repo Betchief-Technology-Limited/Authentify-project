@@ -9,7 +9,7 @@ const apiKeysSchema = new mongoose.Schema({
 const adminSchema = new mongoose.Schema({
     firstName: { type: String, default: null },
     lastName: { type: String, default: null },
-    organization: { type: String, required: true },
+    companyName: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     terms: { type: Boolean, required: true },
