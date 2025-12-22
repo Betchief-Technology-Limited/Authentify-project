@@ -4,97 +4,100 @@ import { orgDB } from "../config/db.js";
 const organizationSchema = new mongoose.Schema(
     {
         // ==========================================================
-        // 1️⃣ COMPANY PROFILE (Business Details)
+        // 1️⃣ TELL US MORE ABOUT YOURSELF
         // ==========================================================
-        registeredName: {
-            type: String,
-            required: [true, "Registered company name is required"],
-            trim: true,
-        },
-        registrationNumber: {
-            type: String,
-            required: [true, "CAC registration number is required"],
-            trim: true,
-            uppercase: true,
-        },
-        officeAddress: {
-            type: String,
-            required: [true, "Office address is required"],
-            trim: true,
-        },
-        countryOfIncorporation: {
-            type: String,
-            required: [true, "Country of incorporation is required"],
-            trim: true,
-        },
-        serviceCategory: {
-            type: String,
-            required: [true, "Service category is required"],
-            trim: true,
-        },
-        directorsOrPartners: {
-            type: [String],
-            required: [true, "At least one director, partner, or trustee name is required"],
-            validate: {
-                validator: (arr) => arr.length > 0,
-                message: "You must provide at least one director or partner name",
-            },
-        },
-
-        // ==========================================================
-        // 2️⃣ CONTACT PERSON DETAILS
-        // ==========================================================
-        contactPerson: {
-            fullName: {
+        personalProfile: {
+            firstName: {
                 type: String,
-                required: [true, "Full name of contact person is required"],
                 trim: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
-            jobTitle: {
+            lastName: {
                 type: String,
-                required: [true, "Job title is required"],
                 trim: true,
-            },
-            email: {
-                type: String,
-                required: [true, "Contact email is required"],
-                trim: true,
-                lowercase: true,
-                match: [/\S+@\S+\.\S+/, "Please enter a valid email address"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
             phoneNumber: {
                 type: String,
-                required: [true, "Contact phone number is required"],
                 trim: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
-            website: {
+            gender: {
+                type: String,
+                enum: ["male", "female"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
+            }
+        },
+
+        // ==========================================================
+        // 2️⃣ TELL US MORE ABOUT YOUR BUSINESS
+        // ==========================================================
+        businessProfile: {
+            registeredName: {
                 type: String,
                 trim: true,
-                match: [
-                    /^(https?:\/\/)?([\w\d-]+\.){1,}\w{2,}(\/.*)?$/,
-                    "Please provide a valid website URL",
-                ],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
+            registrationNumber: {
+                type: String,
+                trim: true,
+                uppercase: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
+            },
+            industry: {
+                type: String,
+                trim: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
+            }
         },
 
         // ==========================================================
         // 3️⃣ DATA PROTECTION OFFICER DETAILS
         // ==========================================================
         dataProtectionOfficer: {
-            fullName: { type: String, required: [true, "DPO full name is required"], trim: true },
-            address: { type: String, required: [true, "DPO address is required"], trim: true },
-            contactEmail: {
+            firstName: {
                 type: String,
-                required: [true, "DPO contact email is required"],
-                lowercase: true,
                 trim: true,
-                match: [/.+@.+\..+/, "Please enter a valid email address"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
-            contactPhone: {
+            lastName: {
                 type: String,
-                required: [true, "DPO contact phone is required"],
                 trim: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
+            phoneNumber: {
+                type: String,
+                trim: true,
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
+            },
+            gender: {
+                type: String,
+                enum: ["male", "female"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
+            },
+
         },
 
         // ==========================================================
@@ -103,70 +106,159 @@ const organizationSchema = new mongoose.Schema(
         uploads: {
             certificateOfIncorporation: {
                 type: String,
-                required: [true, "Certificate of Incorporation must be uploaded"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
-            particularsOfDirectors: {
+            directorsId: {
                 type: String,
-                required: [true, "Particulars of Directors file must be uploaded"],
+                required: function () {
+                    return this.onboardingStatus === "submitted"
+                }
             },
-            particularsOfShareholders: { type: String },
-            operatingLicence: { type: String },
+            shareholdersParticulars: {
+                type: String //optional
+            },
+            operatingLicence: {
+                type: String //optional
+            },
         },
 
         // ==========================================================
         // 5️⃣ SUPPLEMENTAL QUESTIONS (Yes/No)
         // ==========================================================
-        requiresLicense: { type: Boolean, required: true, default: false },
-        servicesRegulatedByAuthority: { type: Boolean, required: true, default: false },
-        complyWithAntiLaundering: { type: Boolean, required: true, default: false },
-        hasAntiLaunderingPolicies: { type: Boolean, required: true, default: false },
-        hasNdaWithStaff: { type: Boolean, required: true, default: false },
-        hasSanctionsForLaundering: { type: Boolean, required: true, default: false },
-        hasSanctionsForDataBreach: { type: Boolean, required: true, default: false },
-        hasDataProtectionPolicy: { type: Boolean, required: true, default: false },
-
-        // ==========================================================
-        // 6️⃣ DATA PROTECTION & SECURITY
-        // ==========================================================
+        requiresLicense: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        servicesRegulatedByAuthority: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        complyWithAntiLaundering: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        hasAntiLaunderingPolicies: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        hasNdaWithStaff: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        hasSanctionsForLaundering: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        hasSanctionsForDataBreach: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
+        hasDataProtectionPolicy: {
+            type: Boolean,
+            required: function () {
+                return this.onboardingStatus === "submitted"
+            },
+            default: false
+        },
         dataProtection: {
             adoptSecurityMeasures: {
                 type: Boolean,
-                required: [true, "Please indicate if security measures are adopted"],
+                required: function () {
+                    return this.onboardingStatus === "submitted";
+                },
+                default: false
             },
             transferDataToOtherCountries: {
                 type: Boolean,
-                required: [true, "Please indicate if data is transferred to other countries"],
+                required: function () {
+                    return this.onboardingStatus === "submitted";
+                },
+                default: false
             },
             useDataForOtherPurposes: {
                 type: Boolean,
-                required: [true, "Please indicate if data is used for other purposes"],
+                required: function () {
+                    return this.onboardingStatus === "submitted";
+                },
+                default: false
             },
             sanctionedByRegulator: {
                 type: Boolean,
-                required: [true, "Please indicate if sanctioned by regulator"],
+                required: function () {
+                    return this.onboardingStatus === "submitted";
+                },
+                default: false
             },
             createAlternateDatabase: {
                 type: Boolean,
-                required: [true, "Please indicate if alternate database is created"],
-            },
-            countriesOfOperation: {
-                type: [String],
-                default: [],
+                required: function () {
+                    return this.onboardingStatus === "submitted";
+                },
+                default: false
             },
         },
 
         // ==========================================================
-        // 7️⃣ AGREEMENTS & TERMS
+        // 6️⃣ ONBOARDING PROGRESS (SAVE & CONTINUE LATER)
+        // ==========================================================
+        onboardingStatus: {
+            type: String,
+            enum: ["draft", "submitted"],
+            default: "draft"
+        },
+        currentStep: {
+            type: Number,
+            default: 1
+        },
+        completedSteps: {
+            type: [Number],
+            default: []
+        },
+        completionPercentage: {
+            type: Number,
+            default: 0
+        },
+        lastSavedAt: {
+            type: Date
+        },
+
+        // ==========================================================
+        // 7️⃣ AGREEMENTS & CLIENT
         // ==========================================================
         agreedToTerms: {
             type: Boolean,
-            required: [true, "You must agree to terms before submission"],
+            required: function () {
+                return this.onboardingStatus === "submitted";
+            },
             default: false,
         },
         clientId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Client",
-            required: [true, "Client reference is required"],
+            required: true
         },
 
         // ==========================================================
@@ -196,6 +288,7 @@ const organizationSchema = new mongoose.Schema(
 organizationSchema.pre("save", function (next) {
     const normalize = (val) => (val === "true" ? true : val === "false" ? false : val);
 
+    //ROOT booleans
     [
         "requiresLicense",
         "servicesRegulatedByAuthority",
@@ -210,11 +303,24 @@ organizationSchema.pre("save", function (next) {
         this[field] = normalize(this[field]);
     });
 
+    // NESTED booleans
     if (this.dataProtection) {
-        for (const key in this.dataProtection) {
+        [
+            "adoptSecurityMeasures",
+            "transferDataToOtherCountries",
+            "useDataForOtherPurposes",
+            "sanctionedByRegulator",
+            "createAlternateDatabase",
+        ].forEach((key) => {
             this.dataProtection[key] = normalize(this.dataProtection[key]);
-        }
+        });
     }
+
+    // if (this.dataProtection) {
+    //     for (const key in this.dataProtection) {
+    //         this.dataProtection[key] = normalize(this.dataProtection[key]);
+    //     }
+    // }
 
     next();
 });
@@ -223,6 +329,7 @@ organizationSchema.pre("save", function (next) {
 // 🧩 INDEXES
 // ==========================================================
 organizationSchema.index({ clientId: 1 });
+organizationSchema.index({ onboardingStatus: 1 });
 organizationSchema.index({ verificationStatus: 1 });
 
 const Organization = orgDB.model("Organization", organizationSchema);

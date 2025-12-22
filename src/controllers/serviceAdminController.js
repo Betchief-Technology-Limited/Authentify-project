@@ -121,10 +121,10 @@ export const getAllOrganizations = async (req, res) => {
   try {
     const { status } = req.query;
 
-    let query = {};
-    if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
-      query.verificationStatus = status.toLowerCase();
-    }
+        let query = { onboardingStatus: "submitted" };
+        if (status && ["pending", "verified", "rejected"].includes(status.toLowerCase())) {
+            query.verificationStatus = status.toLowerCase();
+        }
 
     const organizations = await Organization.find(query).sort({ createdAt: -1 });
 
@@ -181,6 +181,7 @@ export const updateOrganizationStatus = async (req, res) => {
 
         // 2️⃣ Determine contact person email
         const recipient =
+            organizationOwner?.email ||
             organization?.contactPerson?.email ||
             organization?.dataProtectionOfficer?.contactEmail ||
             null;
@@ -192,16 +193,22 @@ export const updateOrganizationStatus = async (req, res) => {
             });
         }
 
+        // Determine company name
+        const companyName =
+            organizationOwner?.companyName ||
+            organizationOwner?.firstName
+
+
         // 3️⃣ Prepare email template
         const tpl =
             status === "verified"
-                ? verifiedTemplate(organization)
-                : rejectedTemplate(organization, feedback);
+                ? verifiedTemplate(companyName)
+                : rejectedTemplate(companyName, feedback);
 
         // 4️⃣ Send the email (to contact person and to organization owner)
         try {
             await sendMail({
-                to: [recipient, organizationOwner.email],
+                to: [recipient],
                 // cc: [organizationOwner.email],
                 subject: tpl.subject,
                 html: tpl.html,

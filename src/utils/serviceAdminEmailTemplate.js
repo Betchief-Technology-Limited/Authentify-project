@@ -1,6 +1,6 @@
 
-export const verifiedTemplate = (org) => {
-    const name = org?.registeredName || "there";
+export const verifiedTemplate = (companyName) => {
+    const name = companyName || "there";
     // const cp = org?.contactPerson?.fullName || "there";
     return {
         subject: "Your Organization has been verified ✅",
@@ -18,8 +18,8 @@ export const verifiedTemplate = (org) => {
     }
 }
 
-export const rejectedTemplate = (org, feedback) => {
-    const name = org?.registeredName || "there";
+export const rejectedTemplate = (companyName, feedback) => {
+    const name = companyName || "there";
     // const cp = org?.contactPerson?.fullName || "there";
     return {
         subject: "Organization Verification Result ❌",

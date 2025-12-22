@@ -6,12 +6,11 @@ import Wallet from '../models/wallet.js';
 import { sendVerificationEmail } from '../utils/sendEmailVerificationForSignup.js';
 
 
-
 export const adminSignUp = async (req, res) => {
     try {
-        const { organization, email, password, confirmPassword, terms } = req.body;
+        const { companyName, email, password, confirmPassword, terms } = req.body;
 
-        if (!organization || !email || !password || !confirmPassword || !terms) {
+        if (!companyName || !email || !password || !confirmPassword || !terms) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
@@ -40,7 +39,7 @@ export const adminSignUp = async (req, res) => {
         const testKeys = generateApiKeys('test');
 
         const newAdmin = new Admin({
-            organization,
+            companyName,
             email,
             password: hashedPassword,
             terms,
@@ -66,7 +65,7 @@ export const adminSignUp = async (req, res) => {
 
         // ✅ Send email (non-blocking — signup response is sent immediately)
 
-        sendVerificationEmail(email, organization, verificationUrl).catch((err) => {
+        sendVerificationEmail(email, companyName, verificationUrl).catch((err) => {
             console.error("❌ Email send error:", err.message);
         });
 
@@ -74,7 +73,7 @@ export const adminSignUp = async (req, res) => {
             success: true,
             message: 'Signup successful! Please check your email to verify your account before login in',
             adminId: newAdmin._id,
-            organization
+            companyName
         });
     } catch (err) {
         console.error(err);
