@@ -61,7 +61,7 @@ export const adminSignUp = async (req, res) => {
         });
 
         // Send verification email
-        const verificationUrl = `http://localhost:3006/api/admin/verify-email?token=${verificationToken}`;
+        const verificationUrl = `https://authentify-project.onrender.com/api/admin/verify-email?token=${verificationToken}`;
 
         // ✅ Send email (non-blocking — signup response is sent immediately)
 
