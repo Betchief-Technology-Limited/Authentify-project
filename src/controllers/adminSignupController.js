@@ -6,7 +6,6 @@ import Wallet from '../models/wallet.js';
 import { sendVerificationEmail } from '../utils/sendEmailVerificationForSignup.js';
 
 
-
 export const adminSignUp = async (req, res) => {
     try {
         const { companyName, email, password, confirmPassword, terms } = req.body;

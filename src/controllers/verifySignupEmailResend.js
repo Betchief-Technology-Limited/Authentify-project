@@ -28,7 +28,7 @@ export const resendVerificationEmail = async (req, res) => {
 
         const verificationUrl = `https://authentify-project.onrender.com/api/admin/verify-email?token=${newToken}`;
 
-        sendVerificationEmail(admin.email, admin.firstName, verificationUrl).catch((err) => {
+        sendVerificationEmail(admin.email, admin.companyName, verificationUrl).catch((err) => {
             console.error("❌ Email send error:", err.message);
         });
 
