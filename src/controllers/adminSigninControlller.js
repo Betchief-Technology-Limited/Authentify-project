@@ -71,6 +71,7 @@ export const adminLogIn = async (req, res) => {
             id: admin._id,
             firstName: admin.firstName,
             lastName: admin.lastName,
+            companyName: admin.companyName,
             email: admin.email,
             walletBalance: currentBalance,
             testApiKeys: admin.apiKeys.test,
@@ -87,6 +88,7 @@ export const adminLogIn = async (req, res) => {
                 firstName: admin.firstName,
                 lastName: admin.lastName,
                 email: admin.email,
+                companyName: admin.companyName,
                 walletBalance: currentBalance,
                 testApiKeys: admin.apiKeys.test,
                 liveApiKeys: admin.apiKeys.live
