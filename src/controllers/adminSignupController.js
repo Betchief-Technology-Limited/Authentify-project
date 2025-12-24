@@ -36,7 +36,7 @@ export const adminSignUp = async (req, res) => {
         const verificationExpires = Date.now() + 1000 * 60 * 60 * 24; //24 hours
 
         // Generate test keys only
-        const testKeys = generateApiKeys('test');
+        const { publicKey, secret, secretHash } = await generateApiKeys('test');
 
         const newAdmin = new Admin({
             companyName,
@@ -44,8 +44,13 @@ export const adminSignUp = async (req, res) => {
             password: hashedPassword,
             terms,
             apiKeys: {
-                test: testKeys,
-                live: { publicKey: null, secretKey: null }
+                test: {
+                    publicKey,
+                    secretHash,
+                    createdAt: new Date(),
+                    lastRotatedAt: new Date()
+                },
+                live: {}
             },
             verificationToken,
             verificationExpires
@@ -73,7 +78,13 @@ export const adminSignUp = async (req, res) => {
             success: true,
             message: 'Signup successful! Please check your email to verify your account before login in',
             adminId: newAdmin._id,
-            companyName
+            companyName,
+            apiKeys: {
+                test:{
+                    publicKey,
+                    secret
+                }
+            }
         });
     } catch (err) {
         console.error(err);
