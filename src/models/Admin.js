@@ -3,14 +3,24 @@ import { userDB } from "../config/db.js";
 
 const apiKeysSchema = new mongoose.Schema({
     publicKey: { type: String, default: null },
-    secretKey: { type: String, default: null }
-});
+    secretHash: { type: String, default: null },
+    createdAt: { type: Date, default: null },
+    lastRotateedAt: { type: Date, default: null }
+},
+    { _id: false }
+);
 
 const adminSchema = new mongoose.Schema({
     firstName: { type: String, default: null },
     lastName: { type: String, default: null },
     companyName: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true
+    },
     password: { type: String, required: true },
     terms: { type: Boolean, required: true },
     // Email verification
