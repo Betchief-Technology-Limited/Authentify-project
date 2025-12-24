@@ -5,6 +5,7 @@ import { getCurrentAdmin } from '../controllers/getCurrentAdminController.js';
 import { authOrApiKey } from '../middlewares/authOrApiKey.js';
 import { verifyEmail } from '../controllers/verifySignupEmailController.js';
 import { resendVerificationEmail } from '../controllers/verifySignupEmailResend.js';
+import regenerateApiKeys from '../controllers/regenerateApiKeysController.js';
 
 const adminRouter = express.Router();
 
@@ -13,6 +14,9 @@ adminRouter.post('/admin/login', adminLogIn);
 adminRouter.post('/admin/logout', adminLogout);
 adminRouter.get('/admin/verify-email', verifyEmail);
 adminRouter.post('/admin/resend-verification', resendVerificationEmail);
+
+// Regenerate API keys
+adminRouter.post('/admin/keys/regenerate', authOrApiKey, regenerateApiKeys )
 
 // IMPORTANT: use authMiddleware then getCurrentAdmin so response is the admin object 
 adminRouter.get('/admin/me', authOrApiKey, getCurrentAdmin);

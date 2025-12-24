@@ -74,11 +74,21 @@ export const adminLogIn = async (req, res) => {
             companyName: admin.companyName,
             email: admin.email,
             walletBalance: currentBalance,
-            testApiKeys: admin.apiKeys.test,
-            liveApiKeys: admin.apiKeys.live
+            apiKeys: {
+                test: {
+                    publicKey: admin.apiKeys?.test?.publicKey || null,
+                    createdAt: admin.apiKeys?.test?.createdAt || null,
+                    lastRotatedAt: admin.apiKeys?.test?.lastRotatedAt || null
+                },
+                live: {
+                    publicKey: admin.apiKeys?.live?.publicKey || null,
+                    createdAt: admin.apiKeys?.live?.createdAt || null,
+                    lastRotatedAt: admin.apiKeys?.live?.lastRotatedAt || null
+                }
+            }
         });
 
-        
+
         res.status(200).json({
             success: true,
             message: "Login successful",
@@ -90,8 +100,18 @@ export const adminLogIn = async (req, res) => {
                 email: admin.email,
                 companyName: admin.companyName,
                 walletBalance: currentBalance,
-                testApiKeys: admin.apiKeys.test,
-                liveApiKeys: admin.apiKeys.live
+                apiKeys: {
+                    test: {
+                        publicKey: admin.apiKeys?.test?.publicKey || null,
+                        createdAt: admin.apiKeys?.test?.createdAt || null,
+                        lastRotatedAt: admin.apiKeys?.test?.lastRotatedAt || null
+                    },
+                    live: {
+                        publicKey: admin.apiKeys?.live?.publicKey || null,
+                        createdAt: admin.apiKeys?.live?.createdAt || null,
+                        lastRotatedAt: admin.apiKeys?.live?.lastRotatedAt || null
+                    }
+                }
             }
         });
 
