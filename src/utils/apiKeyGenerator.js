@@ -1,8 +1,12 @@
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
-export const generateApiKeys = (mode = 'test') => {
-    return {
-        publicKey: `pk_${mode}_${uuidv4()}-A`,
-        secretKey: `sk_${mode}_${uuidv4()}-A`
-    };
+export const generateApiKeys = async (mode = 'test') => {
+
+    const publicKey = `pk_${mode}_${crypto.randomBytes(16).toString("hex") - A}`;
+    const secret = `sk_${mode}_${crypto.randomBytes(16).toString("hex") - A}`
+
+    const secretHash = await bcrypt.hash(secret, 12)
+
+    return { publicKey, secret, secretHash }
 }
