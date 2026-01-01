@@ -8,7 +8,7 @@ export const getCurrentAdmin = async (req, res) => {
         // req.admin is attached from your auth middleware
         const admin = await Admin.findById(req.admin._id).select("apiKeys firstName lastName email _id companyName");
         console.log(admin)
-        
+
         if (!admin) {
             return res.status(404).json({ message: "Admin not found" });
         }
@@ -16,9 +16,25 @@ export const getCurrentAdmin = async (req, res) => {
         // ✅ Fetch REAL waalet balance
         const wallet = await Wallet.findOne({ admin: admin._id });
         const liveBalance = wallet ? wallet.balance : 0
-        
+
         return res.json({
-            ...admin.toObject(),
+            _id: admin._id,
+            email: admin.email,
+            companyName: admin.companyName,
+            apiKeys: {
+                test: {
+                    publicKey: admin.apiKeys?.test?.publicKey || null,
+                    secretKey: admin.apiKeys?.test?.secretKey || null,
+                    createdAt: admin.apiKeys?.test?.createdAt || null,
+                    lastRotatedAt: admin.apiKeys?.test?.lastRotatedAt || null,
+                },
+                live: {
+                    publicKey: admin.apiKeys?.live?.publicKey || null,
+                    secretKey: admin.apiKeys?.live?.secretKey || null,
+                    createdAt: admin.apiKeys?.live?.createdAt || null,
+                    lastRotatedAt: admin.apiKeys?.live?.lastRotatedAt || null,
+                }
+            },
             walletBalance: liveBalance
         }); // <--- returns admin object directly
     } catch (err) {
@@ -27,7 +43,7 @@ export const getCurrentAdmin = async (req, res) => {
     }
 };
 
-// This is to get all users or all admin 
+// This is to get all users or all admin
 
 // import Admin from "../models/Admin.js";
 

@@ -1,5 +1,6 @@
 import Admin from "../models/Admin.js";
-import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+// import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+import { generatePublicKey, generateSecretKey } from "../utils/apiKeyGenerator.js";
 
 async function regenerateApiKeys(req, res) {
     try {
@@ -33,11 +34,14 @@ async function regenerateApiKeys(req, res) {
             })
         }
     
-        const { publicKey, secret, secretHash } = await generateApiKeys(mode);
+        // This is to generate the publick API key
+        const publicKey = generatePublicKey(mode);
+        const { secretKey, secretHash } = await generateSecretKey(mode)
+        // const { publicKey, secretKey } = await generateApiKeys(mode);
 
         admin.apiKeys[mode] = {
             publicKey,
-            secretHash,
+            secretKey,
             createdAt: admin.apiKeys?.[mode]?.createdAt || new Date(),
             lastRotatedAt: new Date()
         };
@@ -48,10 +52,10 @@ async function regenerateApiKeys(req, res) {
         return res.status(200).json({
             success: true,
             message: "API keys generated successfully",
-            data: {
-                mode,
+            apiKeys: {
                 publicKey,
-                secret
+                secretKey, 
+                secretHash
             }
         });
     } catch (error) {
