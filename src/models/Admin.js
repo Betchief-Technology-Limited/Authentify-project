@@ -3,6 +3,7 @@ import { userDB } from "../config/db.js";
 
 const apiKeysSchema = new mongoose.Schema({
     publicKey: { type: String, default: null },
+    secretKey: { type: String, default: null },
     secretHash: { type: String, default: null },
     createdAt: { type: Date, default: null },
     lastRotatedAt: { type: Date, default: null }

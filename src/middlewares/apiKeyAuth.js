@@ -9,82 +9,190 @@ const JWT_SECRET = process.env.SECRET_KEY;
 
 export const apiKeyAuth = async (req, res, next) => {
   try {
-    let tokenOrKey =
-      req.cookies?.token || // 🔹 From HttpOnly cookie (JWT)
-      req.headers["x-api-key"] || // 🔹 From x-api-key header
-      (req.headers.authorization &&
-        req.headers.authorization.startsWith("Bearer ") &&
-        req.headers.authorization.split(" ")[1]); // 🔹 From Bearer header
-    if (!tokenOrKey) {
-      throw new Error("Missing API key or Bearer token");
-    }
+    const bearer = req.headers.authorization;
+    const xApiKey = req.headers["x-api-key"];
+    const jwtToken = req.cookies?.token;
 
     let admin = null;
+    let mode = null;
 
-    // --- 1️⃣ Try verifying as API key ---
-    admin = await Admin.findOne({
-      $or: [
-        { "apiKeys.test.secretKey": tokenOrKey },
-        { "apiKeys.live.secretKey": tokenOrKey },
-      ],
-    }).select("-password");
+    /* ====================================================
+       1️⃣ API KEY AUTH (PRIMARY FOR API USAGE)
+    ==================================================== */
+    const secretKey =
+      bearer?.startsWith("Bearer ") ? bearer.split(" ")[1] : xApiKey;
 
-    // --- 2️⃣ If no API key found, try verifying as JWT ---
-    if (!admin) {
-      try {
-        const decoded = jwt.verify(tokenOrKey, JWT_SECRET);
-        const adminId = decoded.adminId || decoded.id || decoded._id;
-
-        if (!adminId) throw new Error("Invalid JWT payload");
-        admin = await Admin.findById(adminId).select("-password");
-      } catch (err) {
-        throw new Error("Invalid API key or JWT token");
+    if (secretKey?.startsWith("sk_")) {
+      if (secretKey.startsWith("sk_test_")) mode = "test";
+      else if (secretKey.startsWith("sk_live_")) mode = "live";
+      else {
+        return res.status(401).json({ message: "Invalid API key format" });
       }
+
+      const admins = await Admin.find({
+        [`apiKeys.${mode}.secretHash`]: { $exists: true },
+      }).select(`apiKeys.${mode}.secretHash`);
+
+      for (const a of admins) {
+        const hash = a.apiKeys?.[mode]?.secretHash;
+        if (!hash) continue;
+
+        const match = await bcrypt.compare(secretKey, hash);
+        if (match) {
+          admin = a;
+          break;
+        }
+      }
+
+      if (!admin) {
+        return res.status(401).json({
+          message: "Invalid or revoked API secret key",
+        });
+      }
+
+      req.admin = admin;
+      req.apiMode = mode;
+    }
+
+    /* ====================================================
+       2️⃣ JWT AUTH (DASHBOARD / INTERNAL)
+    ==================================================== */
+    if (!admin && jwtToken) {
+      const decoded = jwt.verify(jwtToken, JWT_SECRET);
+      admin = await Admin.findById(decoded.adminId).select("-password");
+
+      if (!admin) {
+        return res.status(401).json({ message: "Invalid session" });
+      }
+
+      req.admin = admin;
+      req.apiMode = "dashboard";
     }
 
     if (!admin) {
-      throw new Error("Admin not found");
+      return res.status(401).json({
+        message: "Missing or invalid authentication credentials",
+      });
     }
 
-    req.admin = admin;
+    /* ====================================================
+       3️⃣ SUBSCRIPTION CHECK (API ONLY)
+    ==================================================== */
+    if (mode) {
+      const path = req.originalUrl.toLowerCase();
+      let subservice = null;
 
-    // --- 3️⃣ Subscription check (same as your existing logic) ---
-    const path = req.originalUrl.toLowerCase();
-    let subservice = null;
+      if (path.includes("/otp/sms")) subservice = "sms";
+      else if (path.includes("/otp/whatsapp")) subservice = "whatsapp";
+      else if (path.includes("/otp/telegram")) subservice = "telegram";
+      else if (path.includes("/otp/email")) subservice = "email";
+      else if (path.includes("/kyc/premium_nin")) subservice = "premium_nin";
+      else if (path.includes("/kyc/virtual_nin")) subservice = "virtual_nin";
+      else if (path.includes("/kyc/slip_nin")) subservice = "slip_nin";
+      else if (path.includes("/kyc/passport")) subservice = "passport";
+      else if (path.includes("/kyc/voter_card")) subservice = "voter_card";
+      else if (path.includes("/kyc/drivers_licence")) subservice = "drivers_licence";
 
-    if (path.includes("/otp/sms")) subservice = "sms";
-    else if (path.includes("/otp/whatsapp")) subservice = "whatsapp";
-    else if (path.includes("otp/telegram")) subservice = "telegram";
-    else if (path.includes("otp/email")) subservice = "email";
-    else if (path.includes("/email")) subservice = "email";
-    else if (path.includes("/kyc/premium_nin")) subservice = "premium_nin";
-    else if (path.includes("/kyc/virtual_nin")) subservice = "virtual_nin";
-    else if (path.includes("/kyc/slip_nin")) subservice = "slip_nin";
-    else if (path.includes("/kyc/passport")) subservice = "passport";
-    else if (path.includes("/kyc/voter_card")) subservice = "voter_card";
-    else if (path.includes("/kyc/drivers_licence")) subservice = "drivers_licence";
-
-    if (subservice) {
-      const activeSub = await Subscription.findOne({
-        admin: admin._id,
-        subservice,
-        active: true,
-      });
-
-      if (!activeSub) {
-        return res.status(403).json({
-          success: false,
-          message: `Access denied: You have not subscribed to the ${subservice.toUpperCase()} service.`,
+      if (subservice) {
+        const activeSub = await Subscription.findOne({
+          admin: admin._id,
+          subservice,
+          active: true,
         });
+
+        if (!activeSub) {
+          return res.status(403).json({
+            message: `No active subscription for ${subservice.toUpperCase()}`,
+          });
+        }
       }
     }
 
     next();
   } catch (err) {
-    console.error("Universal auth error:", err.message);
-    return res.status(401).json({ success: false, message: err.message });
+    console.error("Auth error:", err.message);
+    return res.status(401).json({ message: "Authentication failed" });
   }
 };
+
+// export const apiKeyAuth = async (req, res, next) => {
+//   try {
+//     let tokenOrKey =
+//       req.cookies?.token || // 🔹 From HttpOnly cookie (JWT)
+//       req.headers["x-api-key"] || // 🔹 From x-api-key header
+//       (req.headers.authorization &&
+//         req.headers.authorization.startsWith("Bearer ") &&
+//         req.headers.authorization.split(" ")[1]); // 🔹 From Bearer header
+//     if (!tokenOrKey) {
+//       throw new Error("Missing API key or Bearer token");
+//     }
+
+//     let admin = null;
+
+//     // --- 1️⃣ Try verifying as API key ---
+//     admin = await Admin.findOne({
+//       $or: [
+//         { "apiKeys.test.secretKey": tokenOrKey },
+//         { "apiKeys.live.secretKey": tokenOrKey },
+//       ],
+//     }).select("-password");
+
+//     // --- 2️⃣ If no API key found, try verifying as JWT ---
+//     if (!admin) {
+//       try {
+//         const decoded = jwt.verify(tokenOrKey, JWT_SECRET);
+//         const adminId = decoded.adminId || decoded.id || decoded._id;
+
+//         if (!adminId) throw new Error("Invalid JWT payload");
+//         admin = await Admin.findById(adminId).select("-password");
+//       } catch (err) {
+//         throw new Error("Invalid API key or JWT token");
+//       }
+//     }
+
+//     if (!admin) {
+//       throw new Error("Admin not found");
+//     }
+
+//     req.admin = admin;
+
+//     // --- 3️⃣ Subscription check (same as your existing logic) ---
+//     const path = req.originalUrl.toLowerCase();
+//     let subservice = null;
+
+//     if (path.includes("/otp/sms")) subservice = "sms";
+//     else if (path.includes("/otp/whatsapp")) subservice = "whatsapp";
+//     else if (path.includes("otp/telegram")) subservice = "telegram";
+//     else if (path.includes("otp/email")) subservice = "email";
+//     else if (path.includes("/email")) subservice = "email";
+//     else if (path.includes("/kyc/premium_nin")) subservice = "premium_nin";
+//     else if (path.includes("/kyc/virtual_nin")) subservice = "virtual_nin";
+//     else if (path.includes("/kyc/slip_nin")) subservice = "slip_nin";
+//     else if (path.includes("/kyc/passport")) subservice = "passport";
+//     else if (path.includes("/kyc/voter_card")) subservice = "voter_card";
+//     else if (path.includes("/kyc/drivers_licence")) subservice = "drivers_licence";
+
+//     if (subservice) {
+//       const activeSub = await Subscription.findOne({
+//         admin: admin._id,
+//         subservice,
+//         active: true,
+//       });
+
+//       if (!activeSub) {
+//         return res.status(403).json({
+//           success: false,
+//           message: `Access denied: You have not subscribed to the ${subservice.toUpperCase()} service.`,
+//         });
+//       }
+//     }
+
+//     next();
+//   } catch (err) {
+//     console.error("Universal auth error:", err.message);
+//     return res.status(401).json({ success: false, message: err.message });
+//   }
+// };
 
 
 

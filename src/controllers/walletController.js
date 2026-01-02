@@ -1,6 +1,7 @@
 import Wallet from "../models/wallet.js";
 import Admin from "../models/Admin.js";
-import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+// import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+import { generatePublicKey, generateSecretKey } from "../utils/apiKeyGenerator.js";
 import mongoose from "mongoose";
 import Transaction from "../models/transaction.js";
 import { credit } from "../services/walletService.js";
@@ -101,19 +102,53 @@ export const rechargeWallet = async (req, res) => {
             return res.status(404).json({ message: "Admin not found" });
         }
 
-        // 3️⃣ Auto-generate LIVE API keys if missing
-        if (!admin.apiKeys?.live?.publicKey || !admin.apiKeys?.live?.secretKey) {
-            admin.apiKeys.live = generateApiKeys("live");
+        let liveSecretToReturn = null;
+
+        // 3️⃣if LIVE keys nott yet created => create once
+        if (!admin.apiKeys?.live?.publicKey) {
+            const publicKey = generatePublicKey("live");
+            const { secretKey, secretHash } = await generateSecretKey("live");
+
+            admin.apiKeys.live = {
+                publicKey,
+                secretHash,
+                createdAt: new Date(),
+                lastRotatedAt: new Date()
+            };
+
             await admin.save();
+
+            // Return secret ONCE
+            liveSecretToReturn = secretKey
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Wallet recharged successfully",
             balance: wallet.balance,
-            apiKeys: admin.apiKeys.live,
-            history: wallet.history
+            history: wallet.history,
+            apiKeys: admin.apiKeys.live.publicKey
+                ? {
+                    publicKey: admin.apiKeys.live.publicKey,
+                    // secret only returned first time
+                    ...(liveSecretToReturn && { secretKey: liveSecretToReturn })
+                }
+                : null
         });
+
+        // // 3️⃣ Auto-generate LIVE API keys if missing
+        // if (!admin.apiKeys?.live?.publicKey || !admin.apiKeys?.live?.secretKey) {
+        //     admin.apiKeys.live = generateApiKeys("live");
+        //     await admin.save();
+        // }
+
+        // res.status(200).json({
+        //     success: true,
+        //     message: "Wallet recharged successfully",
+        //     balance: wallet.balance,
+        //     apiKeys: admin.apiKeys.live,
+        //     history: wallet.history
+        // });
 
     } catch (err) {
         res.status(500).json({

@@ -1,7 +1,8 @@
 import bcrypt from 'bcrypt';
 import Admin from '../models/Admin.js';
 import crypto from 'crypto';
-import { generateApiKeys } from '../utils/apiKeyGenerator.js';
+// import { generateApiKeys } from '../utils/apiKeyGenerator.js';
+import { generatePublicKey, generateSecretKey } from '../utils/apiKeyGenerator.js';
 import Wallet from '../models/wallet.js';
 import { sendVerificationEmail } from '../utils/sendEmailVerificationForSignup.js';
 
@@ -36,7 +37,9 @@ export const adminSignUp = async (req, res) => {
         const verificationExpires = Date.now() + 1000 * 60 * 60 * 24; //24 hours
 
         // Generate test keys only
-        const { publicKey, secret, secretHash } = await generateApiKeys('test');
+        const publicKey = generatePublicKey("test");
+
+        const { secretKey, secretHash } = await generateSecretKey('test');
 
         const newAdmin = new Admin({
             companyName,
@@ -46,7 +49,7 @@ export const adminSignUp = async (req, res) => {
             apiKeys: {
                 test: {
                     publicKey,
-                    secretHash,
+                    secretKey,
                     createdAt: new Date(),
                     lastRotatedAt: new Date()
                 },
@@ -82,8 +85,11 @@ export const adminSignUp = async (req, res) => {
             apiKeys: {
                 test:{
                     publicKey,
-                    secret
-                }
+                    secretKey,
+                    createdAt: new Date(),
+                    lastRotatedAt: new Date()
+                },
+                live: {}
             }
         });
     } catch (err) {

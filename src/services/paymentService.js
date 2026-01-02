@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import Transaction from "../models/transaction.js";
 import Admin from "../models/Admin.js";
 import Wallet from "../models/wallet.js";
-import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+// import { generateApiKeys } from "../utils/apiKeyGenerator.js";
+import { generatePublicKey, generateSecretKey } from "../utils/apiKeyGenerator.js";
 import api from "../config/paystackApi.js";
 import { credit } from "./walletService.js";
 
@@ -308,11 +309,33 @@ export async function finalizePaystackFunding(adminId, reference) {
     await credit(adminId, amountFunded, "Wallet funding via Paystack");
 
     // 5) Ensure LIVE keys exist
+    // New codes for gnerating live keys
     const admin = await Admin.findById(adminId);
-    if (!admin.apiKeys?.live?.publicKey || !admin.apiKeys?.live?.secretKey) {
-        admin.apiKeys.live = generateApiKeys("live");
-        await admin.save();
+    let newLiveSecret = null;
+
+    if (!admin.apiKeys?.live?.publicKey) {
+        const publicKey = generatePublicKey("live");
+        admin.apiKeys.live.publicKey = publicKey;
+        admin.apiKeys.live.createdAt = new Date();
     }
+
+    if(!admin.apiKeys?.live?.secretHash) {
+        const { secretKey, secretHash } = await generateSecretKey("live");
+        admin.apiKeys.live.secretHash = secretHash;
+        admin.apiKeys.live.lastRotatedAt = new Date();
+
+        // Only return once if you want to show user after funding
+        newLiveSecret = secretKey;
+    }
+
+    await admin.save()
+
+    // Old codes for live keys
+    // const admin = await Admin.findById(adminId);
+    // if (!admin.apiKeys?.live?.publicKey || !admin.apiKeys?.live?.secretKey) {
+    //     admin.apiKeys.live = generateApiKeys("live");
+    //     await admin.save();
+    // }
 
     // 6) Return updated wallet balance
     const wallet = await Wallet.findOne({ admin: adminId });
@@ -322,7 +345,8 @@ export async function finalizePaystackFunding(adminId, reference) {
         message: "Wallet funded via Paystack",
         amountFunded,          // 🔥 RETURNED HERE
         newBalance: wallet.balance,
-        reference
+        reference,
+        ...(newLiveSecret && { secretKey: newLiveSecret })
     };
 }
 

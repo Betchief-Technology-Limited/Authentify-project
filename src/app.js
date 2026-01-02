@@ -10,7 +10,7 @@ import otpSmsRouter from './routes/otpRoutes.js';
 import walletRouter from './routes/walletRoutes.js';
 import paymentRouter from './routes/paymentRoutes.js';
 import whatsappRouter from './routes/whatsappOtpRoutes.js';
-import telegramRouter from './routes/telegramOtpRoutes.js';
+import telegramRouter from './routes/telegramOtpRoutes.js';                                                
 import selectableRouter from './routes/selectableOtpRoutes.js';
 import kycRouter from './routes/kycRoutes.js';
 import emailRouter from './routes/emailRoutes.js';
