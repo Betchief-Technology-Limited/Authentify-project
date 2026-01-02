@@ -55,7 +55,7 @@ async function regenerateApiKeys(req, res) {
             apiKeys: {
                 publicKey,
                 secretKey, 
-                secretHash
+                // secretHash
             }
         });
     } catch (error) {
