@@ -7,7 +7,7 @@ async function regenerateApiKeys(req, res) {
         const adminId = req.admin._id;
         const { mode } = req.body;
 
-        if(!["test", "live"].includes(mode)){
+        if (!["test", "live"].includes(mode)) {
             return res.status(400).json({
                 success: false,
                 message: "Mode must be 'test' or 'live'"
@@ -15,7 +15,7 @@ async function regenerateApiKeys(req, res) {
         }
 
         const admin = await Admin.findById(adminId);
-        if(!admin) {
+        if (!admin) {
             return res.status(404).json({
                 success: false,
                 message: "Admin not found"
@@ -24,7 +24,7 @@ async function regenerateApiKeys(req, res) {
 
         // 🔒 Gate live keys
 
-        if(
+        if (
             mode === "live" &&
             (admin.walletBalance <= 0 || !admin.emailVerified)
         ) {
@@ -33,7 +33,7 @@ async function regenerateApiKeys(req, res) {
                 message: "Live keys require verified account and funded wallet"
             })
         }
-    
+
         // This is to generate the publick API key
         const publicKey = generatePublicKey(mode);
         const { secretKey, secretHash } = await generateSecretKey(mode)
@@ -54,7 +54,9 @@ async function regenerateApiKeys(req, res) {
             message: "API keys generated successfully",
             apiKeys: {
                 publicKey,
-                secretKey, 
+                secretKey,
+                createdAt: admin.apiKeys?.[mode]?.createdAt || new Date(),
+                lastRotatedAt: new Date()
                 // secretHash
             }
         });

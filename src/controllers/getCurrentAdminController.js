@@ -43,16 +43,4 @@ export const getCurrentAdmin = async (req, res) => {
     }
 };
 
-// This is to get all users or all admin
 
-// import Admin from "../models/Admin.js";
-
-// export const getAllAdmin = async(req, res)=>{
-//     try {
-//         const admins = await Admin.find().select('-firstName -lastName -email -organization'); //fetch all users
-//         res.json(admins)
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ message: 'Error fetching users', err })
-//     }
-// }

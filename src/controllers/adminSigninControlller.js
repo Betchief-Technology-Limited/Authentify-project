@@ -48,24 +48,13 @@ export const adminLogIn = async (req, res) => {
             { expiresIn: "24h" }
         );
 
-        // // ✅ Send token in HttpOnly cookie
         res.cookie('token', token, {
-            httpOnly: true, //cant be access with JS
-            secure: process.env.NODE_ENV === 'production', //only over http then switch to https when it is over in production
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: 60 * 60 * 1000, // 1hour
         });
 
-        // // ✅ Detect if frontend is local
-        // const isLocalFrontend = req.headers.origin?.includes("localhost");
-
-        // // ✅ Set JWT as HttpOnly cookie
-        // res.cookie("token", token, {
-        //     httpOnly: true,
-        //     secure: !isLocalFrontend, // false for localhost, true for live HTTPS
-        //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
-        //     maxAge: 60 * 60 * 1000, // 1 hour
-        // });
         // 🟢 Log what will be returned
         console.log({
             id: admin._id,
@@ -129,13 +118,5 @@ export const adminLogout = (req, res) => {
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
-    // // ✅ Detect if frontend is local
-    // const isLocalFrontend = req.headers.origin?.includes("localhost");
-
-    // res.clearCookie("token", {
-    //     httpOnly: true,
-    //     secure: !isLocalFrontend, // false for localhost, true for production
-    //     sameSite: isLocalFrontend ? "lax" : "none", // ✅ lax for localhost, none for live
-    // });
     res.json({ message: 'Logout successful' });
 }
