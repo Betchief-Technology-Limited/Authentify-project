@@ -55,27 +55,27 @@ export const adminLogIn = async (req, res) => {
             maxAge: 60 * 60 * 1000, // 1hour
         });
 
-        // 🟢 Log what will be returned
-        console.log({
-            id: admin._id,
-            firstName: admin.firstName,
-            lastName: admin.lastName,
-            companyName: admin.companyName,
-            email: admin.email,
-            walletBalance: currentBalance,
-            apiKeys: {
-                test: {
-                    publicKey: admin.apiKeys?.test?.publicKey || null,
-                    createdAt: admin.apiKeys?.test?.createdAt || null,
-                    lastRotatedAt: admin.apiKeys?.test?.lastRotatedAt || null
-                },
-                live: {
-                    publicKey: admin.apiKeys?.live?.publicKey || null,
-                    createdAt: admin.apiKeys?.live?.createdAt || null,
-                    lastRotatedAt: admin.apiKeys?.live?.lastRotatedAt || null
-                }
-            }
-        });
+        // // 🟢 Log what will be returned
+        // console.log({
+        //     id: admin._id,
+        //     firstName: admin.firstName,
+        //     lastName: admin.lastName,
+        //     companyName: admin.companyName,
+        //     email: admin.email,
+        //     walletBalance: currentBalance,
+        //     apiKeys: {
+        //         test: {
+        //             publicKey: admin.apiKeys?.test?.publicKey || null,
+        //             createdAt: admin.apiKeys?.test?.createdAt || null,
+        //             lastRotatedAt: admin.apiKeys?.test?.lastRotatedAt || null
+        //         },
+        //         live: {
+        //             publicKey: admin.apiKeys?.live?.publicKey || null,
+        //             createdAt: admin.apiKeys?.live?.createdAt || null,
+        //             lastRotatedAt: admin.apiKeys?.live?.lastRotatedAt || null
+        //         }
+        //     }
+        // });
 
 
         res.status(200).json({
