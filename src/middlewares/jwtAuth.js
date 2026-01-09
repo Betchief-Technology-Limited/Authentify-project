@@ -14,7 +14,7 @@ export const authMiddleware = async (req, res, next) => {
 
         if (req.cookies && req.cookies.token) {
             token = req.cookies.token// at top of authMiddleware (temporary)
-            console.log("Incoming cookies:", req.cookies);
+            // console.log("Incoming cookies:", req.cookies);
 
         }
         // Fallback to Authorization header
@@ -48,7 +48,7 @@ export const authMiddleware = async (req, res, next) => {
         }
         // ✅ Attach admin to request
         req.admin = admin;
-        console.log("✅ Authenticated Admin:", req.admin._id);
+        // console.log("✅ Authenticated Admin:", req.admin._id);
 
         next();
     } catch (err) {

@@ -3,7 +3,7 @@ import ServiceAdmin from "../models/serviceAdmin.js";
 export const getCurrentServiceAdmin = async (req, res) => {
     try {
         const serviceAdmin = await ServiceAdmin.findById(req.serviceAdmin._id).select("email fullName _id")
-        console.log(serviceAdmin);
+        // console.log(serviceAdmin);
         // const serviceAdmin = await ServiceAdmin.find().select("email fullName _id");
         // console.log(serviceAdmin);
 

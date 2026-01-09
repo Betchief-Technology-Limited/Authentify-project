@@ -7,7 +7,7 @@ export const getCurrentAdmin = async (req, res) => {
     try {
         // req.admin is attached from your auth middleware
         const admin = await Admin.findById(req.admin._id).select("apiKeys firstName lastName email _id companyName");
-        console.log(admin)
+        // console.log(admin)
 
         if (!admin) {
             return res.status(404).json({ message: "Admin not found" });
